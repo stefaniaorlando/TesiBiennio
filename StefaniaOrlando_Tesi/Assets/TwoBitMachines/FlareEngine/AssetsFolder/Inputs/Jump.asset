@@ -21,4 +21,4 @@ MonoBehaviour:
   axisToRead: 0
   maxThreshold: 99
   minThreshold: -99
-  foldOut: 0
+  foldOut: 1
