@@ -15,7 +15,7 @@ MonoBehaviour:
   buttonName: Down
   type: 0
   mouse: 3
-  key: 115
+  key: 274
   axisName: Vertical
   bindings: []
   axisToRead: 0

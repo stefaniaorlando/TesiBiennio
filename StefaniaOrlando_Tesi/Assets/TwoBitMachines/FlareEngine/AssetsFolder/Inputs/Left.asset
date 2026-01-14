@@ -15,7 +15,7 @@ MonoBehaviour:
   buttonName: Left
   type: 0
   mouse: 3
-  key: 97
+  key: 276
   axisName: Horizontal
   bindings: []
   axisToRead: 0
