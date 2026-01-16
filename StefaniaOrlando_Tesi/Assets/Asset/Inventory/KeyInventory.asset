@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b269cff3ac33a4cb6fd351aac292da, type: 3}
+  m_Name: KeyInventory
+  m_EditorClassIdentifier: Assembly-CSharp::TwoBitMachines.InventorySO
+  referenceInventory:
+  - {fileID: 11400000, guid: 991e6d0c34a43cd4b8fe808caaf859fa, type: 2}
+  defaultItems: []
+  defaultFoldOut: 0
+  signalIndex: 0
+  active: 0

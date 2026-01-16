@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e902e4f2f7e77ff4a85d88d0ae71f8ad, type: 3}
-  m_Name: Key
-  m_EditorClassIdentifier: 
-  itemName: Key
-  keyName: 
+  m_Name: WaterKeyItem
+  m_EditorClassIdentifier: Assembly-CSharp::TwoBitMachines.FlareEngine.ItemSO
+  itemName: WaterKey
+  keyName: WaterKey
   genericString: 
   extraInfo: 
-  description: Open a door.
+  description: Unlock water.
   consumable: 0
   genericFloat: 0
   stackLimit: 10
   cost: 0
-  icon: {fileID: 21300000, guid: 85275d845337c87459c6531a32e16fb7, type: 3}
+  icon: {fileID: 21300000, guid: d683662ee6b1a5a4b98b6012043b5bc8, type: 3}
   prefab: {fileID: 0}
   droppable: 1
   forInventory: 0
@@ -32,5 +32,5 @@ MonoBehaviour:
   delete: 0
   deleteAsk: 0
   deleteData: 0
-  descriptionFoldOut: 1
+  descriptionFoldOut: 0
   extraInfoFoldOut: 0
