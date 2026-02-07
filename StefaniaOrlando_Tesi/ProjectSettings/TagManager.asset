@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
+  serializedVersion: 3
   tags:
   - Beam
   - RotatedWall
@@ -21,6 +21,9 @@ TagManager:
   - Avoid
   - RailRight
   - RailLeft
+  - Consumable
+  - Damage
+  - Enemy
   layers:
   - Default
   - TransparentFX
@@ -70,3 +73,5 @@ TagManager:
   - name: Abvoe
     uniqueID: 1032580689
     locked: 0
+  m_RenderingLayers:
+  - Default
