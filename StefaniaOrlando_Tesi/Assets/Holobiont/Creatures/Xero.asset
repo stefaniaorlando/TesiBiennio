@@ -10,9 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 84dbe78fee39454408b82b4f87c98a10, type: 3}
-  m_Name: Nurturer
+  m_Name: Xero
   m_EditorClassIdentifier: Assembly-CSharp::CreatureTypeSO
-  creatureName: Nurturer
-  baseEnergy: 5
+  creatureName: Xero
+  baseEnergy: 1
   heatResistance: 0
   coldResistance: 0
+  highHumidityEnergyBoost: 0
+  lowHumidityEnergyBoost: 5
+  highHumidityResistance: -1
+  lowHumidityResistance: 10
+  highLightEnergyBoost: 0
+  lowLightEnergyBoost: 0
+  highLightResistance: 0
+  lowLightResistance: 0
+  toxicityResistance: 0

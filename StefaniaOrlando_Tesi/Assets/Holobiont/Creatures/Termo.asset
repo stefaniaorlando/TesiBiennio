@@ -14,5 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CreatureTypeSO
   creatureName: Termo
   baseEnergy: 1
-  heatResistance: 3
+  heatResistance: 5
   coldResistance: -2
+  highHumidityEnergyBoost: 0
+  lowHumidityEnergyBoost: 0
+  highHumidityResistance: 0
+  lowHumidityResistance: 0
+  highLightEnergyBoost: 0
+  lowLightEnergyBoost: 0
+  highLightResistance: 0
+  lowLightResistance: 0
+  toxicityResistance: 0
