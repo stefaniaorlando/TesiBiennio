@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Ariga/AppData/Local/Programs/**)",
+      "Read(//c/Users/Ariga/AppData/Roaming/UnityMCP/**)",
+      "Read(//c/Users/Ariga/AppData/Local/UnityMCP/**)",
+      "Read(//c/Users/Ariga/.config/**)",
+      "Read(//c/Users/Ariga/**)",
+      "Bash(where uv *)",
+      "Bash(where uvx *)",
+      "Bash(where python *)",
+      "Bash(where claude *)",
+      "Bash(where claude.cmd)",
+      "Bash(where claude.exe)",
+      "mcp__UnityMCP__read_console",
+      "mcp__UnityMCP__manage_asset",
+      "mcp__UnityMCP__create_script",
+      "mcp__UnityMCP__refresh_unity",
+      "mcp__UnityMCP__execute_menu_item"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c74d8fdf97e9a6a43ad713b07100b476, type: 3}
+  m_Name: SpawnerConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Holobiont.SpawnerConfig
+  spawnInterval: 2
+  maxAlive: 20
+  nutriciConfig: {fileID: 11400000, guid: ab5733ba1822ebf488af783a198a8125, type: 2}
+  nutriciWeight: 3
+  scudoConfig: {fileID: 11400000, guid: c261b032ddfb4454191198ce731903a4, type: 2}
+  scudoWeight: 2
+  hubConfig: {fileID: 11400000, guid: 1d3f31e800d23a24180d30c01f140180, type: 2}
+  hubWeight: 1

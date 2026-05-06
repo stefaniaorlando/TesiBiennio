@@ -1,57 +1,89 @@
 using UnityEngine;
 
-/*
- * Drives the four environmental variables over time.
- * The actual drift parameters live in the EnvironmentDriftProfile asset
- * referenced below — this component just samples it each frame and writes
- * absolute values (base + drift) through EnvironmentManager's setters.
- *
- * Swap profiles at runtime by assigning a new one to Profile.
- *
- * Runs slightly before default execution order so future drivers (events,
- * debug overrides) can compose on top of drift in the same frame.
- */
-
-[RequireComponent(typeof(EnvironmentManager))]
-[DefaultExecutionOrder(-50)]
-public class EnvironmentDrift : MonoBehaviour
+namespace Holobiont
 {
-    [SerializeField] private EnvironmentDriftProfile profile;
+    /*
+     * Drives the four environmental variables over time.
+     * The actual drift parameters live in the EnvironmentDriftProfile asset
+     * referenced below — this component just samples it each frame and writes
+     * absolute values (base + drift) through EnvironmentManager's setters.
+     *
+     * Swap profiles at runtime by assigning a new one to Profile.
+     *
+     * Execution order is -50: runs after EnvironmentManager (-90) zeroes the
+     * per-frame event delta and before EnvironmentEventSystem (-25) accumulates
+     * this frame's deltas. The composed value (base + delta) is therefore
+     * authored coherently within a single frame.
+     *
+     * Drift amplitude is scaled by DifficultyManager.DriftAmplitudeMul if a
+     * manager is present (1× otherwise). Jitter is intentionally not scaled.
+     */
 
-    public EnvironmentDriftProfile Profile { get => profile; set => profile = value; }
-
-    private EnvironmentManager env;
-
-    private void Awake() => env = GetComponent<EnvironmentManager>();
-
-    private void Update()
+    [RequireComponent(typeof(EnvironmentManager))]
+    [DefaultExecutionOrder(-50)]
+    public class EnvironmentDrift : MonoBehaviour
     {
-        if (profile == null) return;
-        var clock = GameClock.Instance;
-        if (clock == null) return;
+        // Irrational stride per jitter seed, keeps Perlin samples well-spaced. sqrt(3).
+        private const float JITTER_SEED_STRIDE = 1.7320508f;
 
-        float t = clock.Time;
-        var cfg = env.Config;
+        // ----- Config -----
+        [Header("Config")]
+        [Tooltip("Drift profile asset. Defines per-variable curves, periods, amplitudes and jitter.")]
+        [SerializeField] private EnvironmentDriftProfile profile;
 
-        if (profile.temperature.enabled) env.SetTemperature(cfg.temperature.baseValue + Sample(profile.temperature, t));
-        if (profile.humidity.enabled)    env.SetHumidity   (cfg.humidity.baseValue    + Sample(profile.humidity,    t));
-        if (profile.toxicity.enabled)    env.SetToxicity   (cfg.toxicity.baseValue    + Sample(profile.toxicity,    t));
-        if (profile.light.enabled)       env.SetLight      (cfg.light.baseValue       + Sample(profile.light,       t));
-    }
+        /// <summary>The active drift profile. Assignable at runtime to swap world rhythms.</summary>
+        public EnvironmentDriftProfile Profile { get => profile; set => profile = value; }
 
-    private static float Sample(VariableDrift d, float t)
-    {
-        float u     = Mathf.Repeat(t / d.period + d.phaseOffset, 1f);
-        float shape = d.curve.Evaluate(u) * d.amplitude;
+        // ----- State -----
+        private EnvironmentManager env;
 
-        float jitter = 0f;
-        if (d.jitterAmplitude > 0f && d.jitterFrequency > 0f)
+        // ----- Lifecycle -----
+        private void Awake() => env = GetComponent<EnvironmentManager>();
+
+        private void OnEnable()
         {
-            float seedOffset = d.jitterSeed * 1.7320508f; // irrational stride per seed
-            float n = Mathf.PerlinNoise(t * d.jitterFrequency + seedOffset, seedOffset);
-            jitter = (n * 2f - 1f) * d.jitterAmplitude;
+            if (!profile)
+            {
+                Debug.LogError($"{nameof(EnvironmentDrift)} has no {nameof(EnvironmentDriftProfile)} assigned.", this);
+                enabled = false;
+            }
         }
 
-        return shape + jitter;
+        private void Update()
+        {
+            if (!profile) return;
+            var clock = GameClock.Instance;
+            if (!clock) return;
+            // Manager may have disabled itself in OnEnable (no EnvironmentConfig). Don't dereference Config in that case.
+            if (env == null || env.Config == null) return;
+
+            float t = clock.Time;
+            var cfg = env.Config;
+            float ampMul = DifficultyManager.Instance ? DifficultyManager.Instance.DriftAmplitudeMul : 1f;
+
+            if (profile.temperature.enabled) env.SetTemperature(cfg.temperature.baseValue + Sample(profile.temperature, t, ampMul));
+            if (profile.light.enabled)       env.SetLight      (cfg.light.baseValue       + Sample(profile.light,       t, ampMul));
+            if (profile.humidity.enabled)    env.SetHumidity   (cfg.humidity.baseValue    + Sample(profile.humidity,    t, ampMul));
+            if (profile.toxicity.enabled)    env.SetToxicity   (cfg.toxicity.baseValue    + Sample(profile.toxicity,    t, ampMul));
+        }
+
+        // ----- Private -----
+        // ampMul scales the curve output (the "swing"). Jitter is intentionally not scaled —
+        // it's a noise floor, kept independent of difficulty.
+        private static float Sample(VariableDrift d, float t, float ampMul)
+        {
+            float u     = Mathf.Repeat(t / d.period + d.phaseOffset, 1f);
+            float shape = d.curve.Evaluate(u) * d.amplitude * ampMul;
+
+            float jitter = 0f;
+            if (d.jitterAmplitude > 0f && d.jitterFrequency > 0f)
+            {
+                float seedOffset = d.jitterSeed * JITTER_SEED_STRIDE;
+                float n = Mathf.PerlinNoise(t * d.jitterFrequency + seedOffset, seedOffset);
+                jitter = (n * 2f - 1f) * d.jitterAmplitude;
+            }
+
+            return shape + jitter;
+        }
     }
 }
