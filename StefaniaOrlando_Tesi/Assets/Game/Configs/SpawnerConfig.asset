@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Holobiont.SpawnerConfig
   spawnInterval: 2
   maxAlive: 20
+  upstreamSampleCount: 400
   nutriciConfig: {fileID: 11400000, guid: ab5733ba1822ebf488af783a198a8125, type: 2}
   nutriciWeight: 3
   scudoConfig: {fileID: 11400000, guid: c261b032ddfb4454191198ce731903a4, type: 2}

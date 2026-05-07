@@ -14,9 +14,14 @@ namespace Holobiont
      * the simulation. No physics here; the Creature owns its own Rigidbody2D
      * and reacts to the flow field through ApplyForce.
      *
+     * Placement: spawn points are picked along the BoxCollider2D's perimeter
+     * with bias toward edges where the flow field is blowing inward (so
+     * creatures drift naturally across the play area). Falls back to uniform
+     * perimeter when no flow field is present or flow is calm/tangential.
+     * Note: rotated BoxCollider2Ds are treated as their AABB.
+     *
      * TODO:
      *   - Env-coupled bias on top of authored weights (toxicity → scudo, etc.)
-     *   - Spawn-position bias upstream of the flow field
      *   - Crisis-event coupling / delayed blooms
      */
 
@@ -48,6 +53,10 @@ namespace Holobiont
         // ----- Internal state -----
         private readonly HashSet<Creature> tracked = new HashSet<Creature>();
         private readonly List<Creature> pruneBuffer = new List<Creature>(16);
+
+        // ----- Placement scratch (reused per spawn) -----
+        private Vector2[] perimeterPoints;
+        private float[] perimeterScores;
 
         // ----- Lifecycle -----
         private void OnEnable()
@@ -110,7 +119,7 @@ namespace Holobiont
                 return;
             }
 
-            Vector3 pos = RandomPointInBounds(spawnArea.bounds);
+            Vector3 pos = PickUpstreamSpawnPoint(spawnArea.bounds);
             GameObject go = Instantiate(pick.prefab, pos, Quaternion.identity, spawnParent);
 
             var creature = go.GetComponent<Creature>();
@@ -142,12 +151,77 @@ namespace Holobiont
             return config.hubConfig;
         }
 
-        private static Vector3 RandomPointInBounds(Bounds b)
+        // Sample N perimeter points; score each by how strongly flow points
+        // inward across that edge; weighted-pick. No flow field or all-zero
+        // scores → uniform perimeter random.
+        private Vector3 PickUpstreamSpawnPoint(Bounds bounds)
         {
-            return new Vector3(
-                Random.Range(b.min.x, b.max.x),
-                Random.Range(b.min.y, b.max.y),
-                b.center.z);
+            int n = Mathf.Max(1, config.upstreamSampleCount);
+            EnsureBuffers(n);
+
+            var ff = FlowField.Instance;
+            float total = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                RandomPerimeterPoint(bounds, out Vector2 p, out Vector2 outward);
+                perimeterPoints[i] = p;
+                float s = 0f;
+                if (ff)
+                {
+                    Vector2 flow = ff.GetFlowAtPosition(p);
+                    s = Mathf.Max(0f, Vector2.Dot(flow, -outward));
+                }
+                perimeterScores[i] = s;
+                total += s;
+            }
+
+            Vector2 picked;
+            if (total > 0f)
+            {
+                float r = Random.Range(0f, total);
+                float acc = 0f;
+                int idx = n - 1;
+                for (int i = 0; i < n; i++)
+                {
+                    acc += perimeterScores[i];
+                    if (r <= acc) { idx = i; break; }
+                }
+                picked = perimeterPoints[idx];
+            }
+            else
+            {
+                RandomPerimeterPoint(bounds, out picked, out _);
+            }
+
+            return new Vector3(picked.x, picked.y, bounds.center.z);
+        }
+
+        private void EnsureBuffers(int n)
+        {
+            if (perimeterPoints == null || perimeterPoints.Length < n)
+            {
+                perimeterPoints = new Vector2[n];
+                perimeterScores = new float[n];
+            }
+        }
+
+        // Uniformly samples a point on the AABB perimeter and returns the
+        // outward unit normal at that point.
+        private static void RandomPerimeterPoint(Bounds b, out Vector2 point, out Vector2 outwardNormal)
+        {
+            float w = b.size.x;
+            float h = b.size.y;
+            float perimeter = 2f * (w + h);
+            float t = Random.Range(0f, perimeter);
+
+            if (t < w)            { point = new Vector2(b.min.x + t,           b.min.y);      outwardNormal = new Vector2(0f, -1f); return; }
+            t -= w;
+            if (t < h)            { point = new Vector2(b.max.x,               b.min.y + t);  outwardNormal = new Vector2(1f,  0f); return; }
+            t -= h;
+            if (t < w)            { point = new Vector2(b.max.x - t,           b.max.y);      outwardNormal = new Vector2(0f,  1f); return; }
+            t -= h;
+            point = new Vector2(b.min.x, b.max.y - t);
+            outwardNormal = new Vector2(-1f, 0f);
         }
 
         // ----- Tracking -----

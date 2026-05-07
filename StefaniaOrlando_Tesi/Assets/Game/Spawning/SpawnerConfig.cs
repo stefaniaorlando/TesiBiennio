@@ -25,6 +25,12 @@ namespace Holobiont
         [Min(0)]
         public int maxAlive = 20;
 
+        // ----- Placement -----
+        [Header("Placement")]
+        [Tooltip("How many perimeter points to sample when picking an upstream-edge spawn location. Higher = smoother bias toward the windward edge, more flow-field samples per spawn.")]
+        [Min(1)]
+        public int upstreamSampleCount = 16;
+
         // ----- Nutrici -----
         [Header("Nutrici")]
         [Tooltip("Nutrici config asset. Leave empty to disable Nutrici spawns.")]

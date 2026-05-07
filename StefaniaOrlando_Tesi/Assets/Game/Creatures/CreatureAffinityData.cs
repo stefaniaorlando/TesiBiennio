@@ -16,6 +16,7 @@ namespace Holobiont
         [Range(0f, 1f)] public float idealToxicity;
         [Range(0f, 1f)] public float idealLight;
 
-        public Vector4 AsVector => new Vector4(idealTemperature, idealHumidity, idealToxicity, idealLight);
+        // Axis order must match EnvironmentManager.AsNormalizedVector (Temp, Light, Humidity, Toxicity) — Creature.UpdateAffinityAndStress compares them directly.
+        public Vector4 AsVector => new Vector4(idealTemperature, idealLight, idealHumidity, idealToxicity);
     }
 }

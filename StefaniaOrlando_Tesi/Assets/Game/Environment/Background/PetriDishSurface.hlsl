@@ -100,4 +100,41 @@ half3 ComputePetriDishColor(float2 uvWorld, float t)
     return col;
 }
 
+// Channel-mask "height field" used by LitBumped's NormalsRendering pass.
+// Mirrors steps 1-4 of ComputePetriDishColor (warp + voronoi + channel + junction boost).
+// Channels and 3-cell junctions are peaks; cell interiors are zero. ddx/ddy of this
+// gives a tangent-space normal that makes membranes catch 2D lights as raised veins.
+float ComputePetriDishHeight(float2 uvWorld, float t)
+{
+    float2 baseUV = uvWorld * _WarpScale + float2(t * _WarpSpeed, t * _WarpSpeed * 0.7);
+    float2 warp   = float2(
+        fbm(baseUV,                       3),
+        fbm(baseUV + float2(31.7, 19.3), 3)
+    ) - 0.5;
+
+    if (_FlowTurbAmount > 0.0)
+    {
+        float2 turbUV = uvWorld * _FlowTurbScale + float2(t * _WarpSpeed * 2.0, t * _WarpSpeed * 1.4);
+        float2 turb   = float2(
+            fbm(turbUV,                       2),
+            fbm(turbUV + float2(47.2, 23.7), 2)
+        ) - 0.5;
+        warp += turb * _FlowTurbAmount;
+    }
+
+    float2 cellUV = uvWorld * _CellScale + warp * _WarpStrength;
+
+    float3 v  = voronoi(cellUV, _CellJitter, t * _CellAnimSpeed * 6.2831);
+    float  F1 = v.x;
+    float  F2 = v.y;
+
+    float edge     = F2 - F1;
+    float channel  = 1.0 - smoothstep(_ChannelWidth, _ChannelWidth + _ChannelSoftness, edge);
+    float junction = (1.0 - smoothstep(_ChannelWidth * 0.5, _ChannelWidth * 1.5, edge))
+                   * (1.0 - smoothstep(_ChannelWidth * 1.5, _ChannelWidth * 3.0, F1));
+    channel       += junction * _JunctionBoost;
+
+    return channel;
+}
+
 #endif

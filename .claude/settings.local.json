@@ -16,7 +16,9 @@
       "mcp__UnityMCP__manage_asset",
       "mcp__UnityMCP__create_script",
       "mcp__UnityMCP__refresh_unity",
-      "mcp__UnityMCP__execute_menu_item"
+      "mcp__UnityMCP__execute_menu_item",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Projects Unity\\\\StefaniaOrlando\\\\StefaniaOrlando_Tesi\\\\Assets\\\\Game\" -Directory | ForEach-Object { $_.Name })",
+      "Bash(git *)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-Shader "Holobiont/PetriDishBackgroundLit"
+Shader "Holobiont/PetriDishBackgroundLitFlat"
 {
     Properties
     {
@@ -60,7 +60,7 @@ Shader "Holobiont/PetriDishBackgroundLit"
 
         Pass
         {
-            Name "PetriDishBackgroundLit2D"
+            Name "PetriDishBackgroundLitFlat2D"
             Tags { "LightMode" = "Universal2D" }
 
             HLSLPROGRAM

@@ -16,7 +16,7 @@ MonoBehaviour:
   turbulenceNoiseScale: 0.6
   temporalScale: 0.1
   baseFlowSpeed: 1
-  enableInwardBias: 1
+  enableInwardBias: 0
   inwardBiasByDistance:
     serializedVersion: 2
     m_Curve:

@@ -59,6 +59,9 @@ namespace Holobiont
         private bool initialized;
 
         // ----- Public read-only API -----
+        /// <summary>Config asset this creature was initialized with. Null until Initialize runs.</summary>
+        public CreatureConfig Config => config;
+
         /// <summary>Functional category set at spawn — Nutrici / Scudo / Hub.</summary>
         public CreatureType Type => creatureType;
 
