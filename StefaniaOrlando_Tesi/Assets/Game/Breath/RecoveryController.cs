@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Holobiont
 {
@@ -17,14 +18,12 @@ namespace Holobiont
      */
     public class RecoveryController : MonoBehaviour
     {
-        // =========================================================================
-        // CONFIG / REFERENCES
-        // =========================================================================
-
+        // ----- Config -----
         [Header("Config")]
         [Tooltip("Tuning data; supplies recoveryDuration.")]
         [SerializeField] private BreathConfig config;
 
+        // ----- References -----
         [Header("References")]
         [Tooltip("StaminaSystem component - listens for the OnStaminaDepleted event.")]
         [SerializeField] private StaminaSystem staminaSystem;
@@ -35,59 +34,55 @@ namespace Holobiont
         [Tooltip("BreathParameters component - notified to begin/end recovery compensation drift.")]
         [SerializeField] private BreathParameters parameters;
 
-        // =========================================================================
-        // RUNTIME STATE
-        // =========================================================================
-
-        [Header("Runtime State (Read Only)")]
+        // ----- Debug -----
+        [Header("Debug")]
         [Tooltip("Is the player currently in recovery? (Input disabled)")]
-        [SerializeField] private bool isRecovering = false;
+        [SerializeField, ReadOnly] private bool isRecovering = false;
 
         [Tooltip("Time remaining until recovery ends.")]
-        [SerializeField] private float recoveryTimer = 0f;
+        [SerializeField, ReadOnly] private float recoveryTimer = 0f;
 
-        // =========================================================================
-        // EVENTS
-        // =========================================================================
-
+        // ----- Outputs -----
         public event Action OnRecoveryStarted;
         public event Action OnRecoveryEnded;
 
-        // =========================================================================
-        // PUBLIC PROPERTIES
-        // =========================================================================
+        [Header("Events")]
+        [Tooltip("Inspector pair to OnRecoveryStarted. Fires when recovery begins.")]
+        [SerializeField] private UnityEvent recoveryStartedEvent;
 
+        [Tooltip("Inspector pair to OnRecoveryEnded. Fires when recovery ends.")]
+        [SerializeField] private UnityEvent recoveryEndedEvent;
+
+        // ----- Public API -----
         public bool  IsRecovering     => isRecovering;
         public float RecoveryTimer    => recoveryTimer;
-        public float RecoveryDuration => config != null ? config.recoveryDuration : 0f;
+        public float RecoveryDuration => config ? config.recoveryDuration : 0f;
 
         /// <summary>1 = just started, 0 = about to end. Useful for UI.</summary>
         public float NormalizedRecovery =>
             RecoveryDuration > 0f ? recoveryTimer / RecoveryDuration : 0f;
 
-        // =========================================================================
-        // UNITY LIFECYCLE
-        // =========================================================================
-
+        // ----- Lifecycle -----
         private void OnEnable()
         {
-            if (config == null)
+            if (!config)
+            {
                 Debug.LogError($"{nameof(RecoveryController)} on {name} has no BreathConfig assigned.", this);
+                enabled = false;
+                return;
+            }
 
-            if (staminaSystem != null)
+            if (staminaSystem)
                 staminaSystem.OnStaminaDepleted += HandleStaminaDepleted;
         }
 
         private void OnDisable()
         {
-            if (staminaSystem != null)
+            if (staminaSystem)
                 staminaSystem.OnStaminaDepleted -= HandleStaminaDepleted;
         }
 
-        // =========================================================================
-        // TICK
-        // =========================================================================
-
+        // ----- Tick -----
         public void Tick(float deltaTime)
         {
             if (!isRecovering) return;
@@ -98,10 +93,7 @@ namespace Holobiont
                 EndRecovery();
         }
 
-        // =========================================================================
-        // PRIVATE
-        // =========================================================================
-
+        // ----- Private -----
         private void HandleStaminaDepleted()
         {
             if (isRecovering) return;
@@ -113,18 +105,19 @@ namespace Holobiont
             isRecovering = true;
             recoveryTimer = RecoveryDuration;
 
-            if (oscillator != null)
+            if (oscillator)
                 oscillator.SetPaused(false);
 
-            if (staminaSystem != null)
+            if (staminaSystem)
                 staminaSystem.SetRecoveryState(true);
 
             // Force compensation overshoot: each axis drifts toward the opposite
             // extreme of where it sat at depletion.
-            if (parameters != null)
+            if (parameters)
                 parameters.BeginRecoveryCompensation();
 
             OnRecoveryStarted?.Invoke();
+            recoveryStartedEvent?.Invoke();
         }
 
         private void EndRecovery()
@@ -132,13 +125,14 @@ namespace Holobiont
             isRecovering = false;
             recoveryTimer = 0f;
 
-            if (staminaSystem != null)
+            if (staminaSystem)
                 staminaSystem.SetRecoveryState(false);
 
-            if (parameters != null)
+            if (parameters)
                 parameters.EndRecoveryCompensation();
 
             OnRecoveryEnded?.Invoke();
+            recoveryEndedEvent?.Invoke();
         }
     }
 }

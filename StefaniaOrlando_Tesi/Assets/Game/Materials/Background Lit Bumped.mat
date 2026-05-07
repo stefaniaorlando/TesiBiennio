@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Background Lit
-  m_Shader: {fileID: 4800000, guid: 3559d585c7094a14ca44ac445e5372c7, type: 3}
+  m_Name: Background Lit Bumped
+  m_Shader: {fileID: 4800000, guid: 9f609f2dbe6ae9a4b84097c70dfdffd7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -55,6 +55,7 @@ Material:
     - _GrainIntensity: 0.06
     - _GrainScale: 60
     - _JunctionBoost: 1.2
+    - _NormalStrength: 5
     - _PulseFreq: 4
     - _PulseSpeed: 0.6
     - _PulseStrength: 0.25

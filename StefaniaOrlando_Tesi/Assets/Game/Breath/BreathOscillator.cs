@@ -15,36 +15,28 @@ namespace Holobiont
      */
     public class BreathOscillator : MonoBehaviour
     {
-        // =========================================================================
-        // REFERENCES
-        // =========================================================================
-
+        // ----- References -----
         [Header("References")]
         [Tooltip("BreathParameters component that supplies current frequency and depth.")]
         [SerializeField] private BreathParameters parameters;
 
-        // =========================================================================
-        // RUNTIME STATE
-        // =========================================================================
-
-        [Header("Runtime State (Read Only)")]
+        // ----- Debug -----
+        [Header("Debug")]
         [Tooltip("Current position in the breath cycle. 0 = empty, 1 = full.")]
-        [SerializeField] private float phase = 0f;
+        [SerializeField, ReadOnly] private float phase = 0f;
 
         [Tooltip("Current direction: +1 = inhaling, -1 = exhaling.")]
-        [SerializeField] private int direction = 1;
+        [SerializeField, ReadOnly] private int direction = 1;
 
         [Tooltip("Is the breath currently being held? (Space key)")]
-        [SerializeField] private bool isPaused = false;
+        [SerializeField, ReadOnly] private bool isPaused = false;
 
+        // ----- Internal state -----
         private float displacement;
         private float velocity;
         private float previousDisplacement;
 
-        // =========================================================================
-        // PUBLIC PROPERTIES
-        // =========================================================================
-
+        // ----- Public API -----
         /// <summary>Raw lung-fill position in the cycle (0 = empty, 1 = full).</summary>
         public float Phase => phase;
 
@@ -61,15 +53,12 @@ namespace Holobiont
         public float Velocity => velocity;
 
         /// <summary>Current frequency from BreathParameters (cycles/second).</summary>
-        public float Frequency => parameters != null ? parameters.FrequencyCurrent : 0f;
+        public float Frequency => parameters ? parameters.FrequencyCurrent : 0f;
 
         /// <summary>Current depth from BreathParameters (raw amplitude scalar).</summary>
-        public float Depth => parameters != null ? parameters.DepthCurrent : 0f;
+        public float Depth => parameters ? parameters.DepthCurrent : 0f;
 
-        // =========================================================================
-        // UNITY LIFECYCLE
-        // =========================================================================
-
+        // ----- Lifecycle -----
         private void Start()
         {
             phase = 0f;
@@ -78,10 +67,7 @@ namespace Holobiont
             previousDisplacement = 0f;
         }
 
-        // =========================================================================
-        // TICK
-        // =========================================================================
-
+        // ----- Tick -----
         public void Tick(float deltaTime)
         {
             float currentFrequency = Frequency;
@@ -116,12 +102,10 @@ namespace Holobiont
                 velocity = (displacement - previousDisplacement) / deltaTime;
         }
 
-        // =========================================================================
-        // INPUT
-        // =========================================================================
-
+        // ----- Inputs -----
         public void SetPaused(bool paused) => isPaused = paused;
 
+        [ContextMenu("Toggle Pause")]
         public void TogglePause() => isPaused = !isPaused;
     }
 }

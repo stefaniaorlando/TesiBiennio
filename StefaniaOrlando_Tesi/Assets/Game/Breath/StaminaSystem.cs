@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Holobiont
 {
@@ -14,14 +15,12 @@ namespace Holobiont
      */
     public class StaminaSystem : MonoBehaviour
     {
-        // =========================================================================
-        // CONFIG / REFERENCES
-        // =========================================================================
-
+        // ----- Config -----
         [Header("Config")]
         [Tooltip("Tuning data for stamina drain, regen, and recovery regen.")]
         [SerializeField] private BreathConfig config;
 
+        // ----- References -----
         [Header("References")]
         [Tooltip("BreathParameters component - used to check how far breathing deviates from baseline.")]
         [SerializeField] private BreathParameters parameters;
@@ -29,53 +28,45 @@ namespace Holobiont
         [Tooltip("BreathOscillator component - used to check if breath is being held.")]
         [SerializeField] private BreathOscillator oscillator;
 
-        // =========================================================================
-        // RUNTIME STATE
-        // =========================================================================
-
-        [Header("Runtime State (Read Only)")]
+        // ----- Debug -----
+        [Header("Debug")]
         [Tooltip("Current stamina level. Watch this during play to see drain/regen in action.")]
-        [SerializeField] private float staminaCurrent;
+        [SerializeField, ReadOnly] private float staminaCurrent;
 
+        // ----- Internal state -----
         private bool isInRecovery;
 
-        // =========================================================================
-        // EVENTS
-        // =========================================================================
-
+        // ----- Outputs -----
+        /// <summary>Fired when stamina hits zero. Subscribed by RecoveryController.</summary>
         public event Action OnStaminaDepleted;
 
-        // =========================================================================
-        // PUBLIC PROPERTIES
-        // =========================================================================
+        [Header("Events")]
+        [Tooltip("Inspector pair to OnStaminaDepleted. Fires when stamina hits zero.")]
+        [SerializeField] private UnityEvent staminaDepletedEvent;
 
+        // ----- Public API -----
         public float StaminaCurrent => staminaCurrent;
-        public float StaminaMax     => config != null ? config.staminaMax : 1f;
+        public float StaminaMax     => config ? config.staminaMax : 1f;
 
         /// <summary>Stamina as 0-1 percentage. Useful for UI bars and IBreathInput.</summary>
         public float NormalizedStamina => StaminaMax > 0f ? staminaCurrent / StaminaMax : 0f;
 
-        // =========================================================================
-        // UNITY LIFECYCLE
-        // =========================================================================
-
+        // ----- Lifecycle -----
         private void OnEnable()
         {
-            if (config == null)
+            if (!config)
             {
                 Debug.LogError($"{nameof(StaminaSystem)} on {name} has no BreathConfig assigned.", this);
+                enabled = false;
                 return;
             }
             staminaCurrent = config.staminaMax;
         }
 
-        // =========================================================================
-        // TICK
-        // =========================================================================
-
+        // ----- Tick -----
         public void Tick(float deltaTime)
         {
-            if (config == null) return;
+            if (!config) return;
 
             if (isInRecovery)
             {
@@ -83,9 +74,9 @@ namespace Holobiont
                 return;
             }
 
-            float frequencyDeviation = parameters != null ? parameters.FrequencyDeviation : 0f;
-            float depthDeviation     = parameters != null ? parameters.DepthDeviation     : 0f;
-            bool isPaused            = oscillator != null && oscillator.IsPaused;
+            float frequencyDeviation = parameters ? parameters.FrequencyDeviation : 0f;
+            float depthDeviation     = parameters ? parameters.DepthDeviation     : 0f;
+            bool isPaused            = oscillator && oscillator.IsPaused;
 
             bool isNearBaseline = frequencyDeviation < config.baselineTolerance
                                && depthDeviation     < config.baselineTolerance;
@@ -107,13 +98,13 @@ namespace Holobiont
             staminaCurrent = Mathf.Clamp(staminaCurrent, 0f, config.staminaMax);
 
             if (staminaCurrent <= 0f)
+            {
                 OnStaminaDepleted?.Invoke();
+                staminaDepletedEvent?.Invoke();
+            }
         }
 
-        // =========================================================================
-        // PUBLIC METHODS
-        // =========================================================================
-
+        // ----- Inputs -----
         /// <summary>Called by RecoveryController when recovery state changes.</summary>
         public void SetRecoveryState(bool recovering) => isInRecovery = recovering;
     }

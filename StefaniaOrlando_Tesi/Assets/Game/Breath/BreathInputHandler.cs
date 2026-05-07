@@ -11,10 +11,7 @@ namespace Holobiont
      */
     public class BreathInputHandler : MonoBehaviour
     {
-        // =========================================================================
-        // REFERENCES
-        // =========================================================================
-
+        // ----- References -----
         [Header("References")]
         [Tooltip("BreathParameters component - receives frequency and depth input.")]
         [SerializeField] private BreathParameters parameters;
@@ -25,10 +22,7 @@ namespace Holobiont
         [Tooltip("RecoveryController component - checked to see if input should be ignored.")]
         [SerializeField] private RecoveryController recoveryController;
 
-        // =========================================================================
-        // KEY BINDINGS
-        // =========================================================================
-
+        // ----- Key Bindings -----
         [Header("Key Bindings")]
         [Tooltip("Key to increase breathing frequency (breathe faster). Default: W")]
         [SerializeField] private KeyCode increaseFrequencyKey = KeyCode.W;
@@ -45,15 +39,12 @@ namespace Holobiont
         [Tooltip("Key to hold breath (pause the oscillator). Default: Space")]
         [SerializeField] private KeyCode pauseKey = KeyCode.Space;
 
-        // =========================================================================
-        // TICK
-        // =========================================================================
-
+        // ----- Tick -----
         public void Tick()
         {
-            bool isRecovering = recoveryController != null && recoveryController.IsRecovering;
+            bool isRecovering = recoveryController && recoveryController.IsRecovering;
 
-            if (parameters != null)
+            if (parameters)
             {
                 if (isRecovering)
                 {
@@ -72,7 +63,7 @@ namespace Holobiont
                 }
             }
 
-            if (oscillator != null)
+            if (oscillator)
             {
                 if (isRecovering)
                     oscillator.SetPaused(false);

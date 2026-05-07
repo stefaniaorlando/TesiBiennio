@@ -10,18 +10,12 @@ namespace Holobiont
      */
     public class BreathVisualizer : MonoBehaviour
     {
-        // =========================================================================
-        // REFERENCES
-        // =========================================================================
-
+        // ----- References -----
         [Header("Main Reference")]
         [Tooltip("The BreathSimulator providing all breath data.")]
         [SerializeField] private BreathSimulator breath;
 
-        // =========================================================================
-        // UI ELEMENTS
-        // =========================================================================
-
+        // ----- UI -----
         [Header("UI Sliders")]
         [Tooltip("Vertical slider showing current lung fill (0 = empty, 1 = full).")]
         [SerializeField] private Slider breathSlider;
@@ -35,10 +29,7 @@ namespace Holobiont
         [Tooltip("Horizontal slider showing recovery progress. Auto-hidden when not recovering.")]
         [SerializeField] private Slider recoverySlider;
 
-        // =========================================================================
-        // OPTIONAL VISUAL FEEDBACK
-        // =========================================================================
-
+        // ----- Optional Visual Feedback -----
         [Header("Optional Recovery Feedback")]
         [Tooltip("(Optional) The fill Image of the breath slider. If assigned, changes color during recovery.")]
         [SerializeField] private Image breathFill;
@@ -49,30 +40,27 @@ namespace Holobiont
         [Tooltip("Color of breath bar during recovery (grayed out to show loss of control).")]
         [SerializeField] private Color recoveryColor = Color.gray;
 
-        // =========================================================================
-        // UPDATE
-        // =========================================================================
-
+        // ----- Lifecycle -----
         private void Update()
         {
-            if (breath == null) return;
+            if (!breath) return;
 
             bool isRecovering = breath.InRecovery;
 
-            if (breathSlider != null)
+            if (breathSlider)
                 breathSlider.value = breath.Displacement;
 
-            if (breathFill != null)
+            if (breathFill)
                 breathFill.color = isRecovering ? recoveryColor : normalColor;
 
             // Depth bar inverts so deep breathing reads as low and shallow as high.
-            if (depthSlider != null)
+            if (depthSlider)
                 depthSlider.value = 1f - breath.Depth;
 
-            if (staminaSlider != null)
+            if (staminaSlider)
                 staminaSlider.value = breath.Stamina;
 
-            if (recoverySlider != null)
+            if (recoverySlider)
             {
                 if (isRecovering)
                 {
