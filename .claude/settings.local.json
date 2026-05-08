@@ -18,7 +18,12 @@
       "mcp__UnityMCP__refresh_unity",
       "mcp__UnityMCP__execute_menu_item",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Projects Unity\\\\StefaniaOrlando\\\\StefaniaOrlando_Tesi\\\\Assets\\\\Game\" -Directory | ForEach-Object { $_.Name })",
-      "Bash(git *)"
+      "Bash(git *)",
+      "mcp__UnityMCP__batch_execute",
+      "mcp__UnityMCP__manage_scene",
+      "mcp__UnityMCP__manage_gameobject",
+      "mcp__UnityMCP__manage_components",
+      "Bash(Find \"D:\\\\Projects Unity\\\\StefaniaOrlando\\\\StefaniaOrlando_Tesi\\\\Assets\" -name \"*Config*\" -o -name \"*config*\")"
     ]
   }
 }

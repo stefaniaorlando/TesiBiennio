@@ -54,6 +54,10 @@ namespace TwoBitMachines.FlareEngine.Interactables
                 {
                         jobHandle.Complete();
 
+                        if (characterPosition.IsCreated) characterPosition.Dispose();
+                        if (characterOldPosition.IsCreated) characterOldPosition.Dispose();
+                        if (characterVelocity.IsCreated) characterVelocity.Dispose();
+
                         List<WorldCollision> character = Character.characters;
                         characterPosition = new NativeArray<Vector3>(character.Count, Allocator.TempJob);
                         characterOldPosition = new NativeArray<Vector2>(character.Count, Allocator.TempJob);
@@ -115,6 +119,9 @@ namespace TwoBitMachines.FlareEngine.Interactables
                 public void OnDestroy ()
                 {
                         jobHandle.Complete();
+                        if (characterPosition.IsCreated) characterPosition.Dispose();
+                        if (characterOldPosition.IsCreated) characterOldPosition.Dispose();
+                        if (characterVelocity.IsCreated) characterVelocity.Dispose();
                         if (vertexOffset.IsCreated)
                                 vertexOffset.Dispose();
                         if (perlinNoise.IsCreated)

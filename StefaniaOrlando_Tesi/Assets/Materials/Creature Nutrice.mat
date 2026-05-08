@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Creature Nutrice
+  m_Shader: {fileID: 4800000, guid: 44a78054d09c28d41b502a5a508a3bac, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BreathTint: 0.1
+    - _ContainSaturation: 1.209
+    - _ContainTimeScale: 0.3
+    - _DeflectRange: 0.12
+    - _DeflectStrength: 0.25
+    - _DesaturationAmount: 0.7
+    - _DissolveBand: 0
+    - _EdgeSoftness: 0.05
+    - _Efficiency: 1
+    - _EnableExternalAlpha: 0
+    - _FieldRelation: 0
+    - _FrayAmplitude: 0.08
+    - _FrayScale: 8
+    - _HeartbeatAmplitude: 0.18
+    - _HeartbeatRate: 1.2
+    - _HeartbeatStart: 0.35
+    - _NoiseScale: 0.6
+    - _RimStrength: 0.55
+    - _Shape: 0
+    - _ShapeRadius: 0.45
+    - _Stress: 0
+    - _ZWrite: 0
+    m_Colors:
+    - _BaseColor: {r: 0.38762298, g: 0.8742138, b: 0.736699, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

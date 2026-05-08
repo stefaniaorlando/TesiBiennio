@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a65ff5bcbb0c08c479d2529d1a298bc8, type: 3}
+  m_Name: BreathConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Holobiont.BreathConfig
+  frequencyBaseline: 0.25
+  frequencyMin: 0.1
+  frequencyMax: 0.5
+  frequencyApproachRate: 0.2
+  frequencyDecayRate: 0.1
+  depthBaseline: 0.5
+  depthMin: 0.2
+  depthMax: 1
+  depthApproachRate: 0.5
+  depthDecayRate: 0.3
+  staminaMax: 1
+  baseDrainRate: 0.2
+  pauseDrainRate: 0.25
+  regenRate: 0.15
+  regenRateDuringRecovery: 0.3
+  baselineTolerance: 0.05
+  recoveryDuration: 3
+  pauseBoostEnabled: 1
+  pauseBoostMultiplier: 2
+  pauseBoostDecayRate: 3
