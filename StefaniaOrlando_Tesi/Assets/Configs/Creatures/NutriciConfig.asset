@@ -44,4 +44,4 @@ MonoBehaviour:
   unboundLifetime: 30
   unboundLinearDamping: 0.5
   boundLinearDamping: 4
-  baseConversionRate: 1
+  baseConversionRate: 1.5

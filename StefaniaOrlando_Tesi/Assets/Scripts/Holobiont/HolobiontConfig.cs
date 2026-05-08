@@ -9,7 +9,7 @@ namespace Holobiont
      *   Energy            — capacity, drain rates, cost multipliers (per second).
      *   Composition       — carrying capacity, hub bonuses.
      *   Cascade Failure   — pacing of forced sheds when energy reaches zero.
-     *   Force Field       — radii and forces applied to unbound creatures.
+     *   Breath Field      — extracted into BreathFieldConfig (radii, forces, ring visuals).
      *   Breath Mapping    — curves that translate breath signals into game effects.
      *   Bound Positioning — ring layout for bonded creatures.
      *
@@ -53,36 +53,18 @@ namespace Holobiont
         [Tooltip("Seconds between successive sheds while in cascade failure.")]
         [Min(0.05f)] public float cascadeTickInterval = 1f;
 
-        // ----- Force Field -----
-        [Header("Force Field")]
-        [Tooltip("World-units field reach at minimum breath depth.")]
-        [Min(0f)] public float baseAttractionRadius = 3f;
+        // ----- Breath Field -----
+        [Header("Breath Field")]
+        [Tooltip("Tuning for the breath-driven attraction/repulsion field and its ring visualization. Single source for HolobiontForceField (geometry, forces, hub bonus) and HolobiontView (ring colors, alphas).")]
+        [SerializeField] private BreathFieldConfig breathField;
 
-        [Tooltip("World-units field reach at maximum breath depth.")]
-        [Min(0f)] public float maxAttractionRadius = 8f;
-
-        [Tooltip("Force magnitude applied to unbound creatures while exhaling. Positive = pulled toward center.")]
-        [Min(0f)] public float attractionStrength = 6f;
-
-        [Tooltip("Force magnitude applied to unbound creatures while inhaling. Always pushes away from center.")]
-        [Min(0f)] public float repulsionStrength = 6f;
-
-        [Tooltip("Distance from center, normalized to current radius (0 = center, 1 = edge), mapped to a force multiplier. Default linear: max pull at the edge, no pull at the center, so creatures don't oscillate through origin.")]
-        public AnimationCurve attractionFalloff = AnimationCurve.Linear(0f, 0f, 1f, 1f);
-
-        [Tooltip("Capture radius around the holobiont. Unbound creatures inside this radius bond on hold-exhale.")]
-        [Min(0f)] public float bondingRange = 1.5f;
+        /// <summary>Breath-field tuning (radii, forces, hub bonus, ring visuals). May be null if not yet wired.</summary>
+        public BreathFieldConfig BreathField => breathField;
 
         // ----- Breath Mapping -----
         [Header("Breath Mapping")]
         [Tooltip("Breath depth (0..1) mapped to an energy-inflow multiplier per second, before nutrici efficiency. Default linear: depth 0 = no inflow, depth 1 = full inflow.")]
         public AnimationCurve depthToEnergyMultiplier = AnimationCurve.Linear(0f, 0f, 1f, 1f);
-
-        [Tooltip("Breath phase (-1 inhale → +1 exhale, sampled at -1, 0, +1) mapped to a field-radius multiplier. Default contracts the field on inhale, expands on exhale.")]
-        public AnimationCurve breathPhaseToFieldRadius = new AnimationCurve(
-            new Keyframe(-1f, 0.5f),
-            new Keyframe( 0f, 1.0f),
-            new Keyframe(+1f, 1.4f));
 
         [Tooltip("Normalized breath frequency (0..1) mapped to a global metabolic-rate multiplier. Per design decision #6, this scales BOTH inflow and drain — fast breathing is a tempo change, not a power boost. Default: 0 → 0.5x, 0.5 → 1.0x, 1 → 1.5x.")]
         public AnimationCurve frequencyToMetabolicRate = new AnimationCurve(

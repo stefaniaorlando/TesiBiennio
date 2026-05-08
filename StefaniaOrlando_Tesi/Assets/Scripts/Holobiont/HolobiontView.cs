@@ -13,11 +13,13 @@ namespace Holobiont
      *     white square sprite. Local scale = currentRadius × 2; per-instance
      *     MPB pushes _State (0 idle / 1 capture / 2 shed), _CurrentRadius
      *     (so the shader's wave amplitude divides out and stays world-
-     *     constant), and the three state colors. Master alpha on _BaseColor.a
-     *     is breath-modulated continuously across all states — the per-state
-     *     visuals (captured interior, outflow shimmer) are layered on top by
-     *     the shader itself. NO C# alpha pulse during capture/shed (that was
-     *     a flicker we banned).
+     *     constant), and the three state colors. Ring colors and the min/max
+     *     master alpha are read from BreathFieldConfig (manager.Config.BreathField)
+     *     so all force-field tuning lives in one asset. Master alpha on
+     *     _BaseColor.a is breath-modulated continuously across all states —
+     *     the per-state visuals (captured interior, outflow shimmer) are
+     *     layered on top by the shader itself. NO C# alpha pulse during
+     *     capture/shed (that was a flicker we banned).
      *
      * Both sprite references are optional — leave one unassigned and that
      * block becomes a no-op. Convenient when bringing visuals up incrementally.
@@ -70,22 +72,6 @@ namespace Holobiont
 
         [Tooltip("Fraction of base scale lost on Death (visual collapse).")]
         [Range(0f, 0.9f), SerializeField] private float deadShrinkAmount = 0.4f;
-
-        [Header("Field Ring Tuning")]
-        [Tooltip("Idle ring color (no capture, no shed).")]
-        [SerializeField] private Color idleColor    = Color.white;
-
-        [Tooltip("Ring color while hold-exhale capture is active.")]
-        [SerializeField] private Color captureColor = new Color(1f,   0.85f, 0.3f);
-
-        [Tooltip("Ring color while hold-inhale shed is active.")]
-        [SerializeField] private Color shedColor    = new Color(0.4f, 0.7f,  1f);
-
-        [Tooltip("Ring master alpha at full inhale (phase = -1). Drives the shader's _BaseColor.a continuously across all states.")]
-        [Range(0f, 1f), SerializeField] private float minRingAlpha = 0.05f;
-
-        [Tooltip("Ring master alpha at full exhale (phase = +1). Drives the shader's _BaseColor.a continuously across all states.")]
-        [Range(0f, 1f), SerializeField] private float maxRingAlpha = 0.55f;
 
         // ----- Cached property IDs -----
         private static readonly int IDState         = Shader.PropertyToID("_State");
@@ -167,6 +153,8 @@ namespace Holobiont
         private void UpdateFieldRing()
         {
             if (!fieldRingSprite || !forceField) return;
+            var field = manager.Config ? manager.Config.BreathField : null;
+            if (!field) return;
 
             float radius   = forceField.CurrentRadius;
             float diameter = radius * 2f;
@@ -181,17 +169,17 @@ namespace Holobiont
             // on top of this baseline rather than snapping alpha values per state.
             float phase = manager.Breath != null ? manager.Breath.Phase : 0f;
             float lerpT = Mathf.InverseLerp(-1f, 1f, phase);
-            float alpha = Mathf.Lerp(minRingAlpha, maxRingAlpha, lerpT);
+            float alpha = Mathf.Lerp(field.minRingAlpha, field.maxRingAlpha, lerpT);
 
-            Color baseWithAlpha = idleColor;
+            Color baseWithAlpha = field.idleColor;
             baseWithAlpha.a = alpha;
 
             fieldRingSprite.GetPropertyBlock(fieldRingMpb);
             fieldRingMpb.SetFloat(IDState,         state);
             fieldRingMpb.SetFloat(IDCurrentRadius, Mathf.Max(0.0001f, radius));
             fieldRingMpb.SetColor(IDBaseColor,     baseWithAlpha);
-            fieldRingMpb.SetColor(IDCaptureColor,  captureColor);
-            fieldRingMpb.SetColor(IDShedColor,     shedColor);
+            fieldRingMpb.SetColor(IDCaptureColor,  field.captureColor);
+            fieldRingMpb.SetColor(IDShedColor,     field.shedColor);
             fieldRingSprite.SetPropertyBlock(fieldRingMpb);
         }
     }

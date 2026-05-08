@@ -57,6 +57,7 @@ namespace Holobiont
         // ----- Placement scratch (reused per spawn) -----
         private Vector2[] perimeterPoints;
         private float[] perimeterScores;
+        private Vector2[] perimeterOutwards;
 
         // ----- Lifecycle -----
         private void OnEnable()
@@ -135,7 +136,7 @@ namespace Holobiont
                 return;
             }
 
-            Vector3 pos = PickUpstreamSpawnPoint(spawnArea.bounds);
+            Vector3 pos = PickUpstreamSpawnPoint(spawnArea.bounds, out Vector2 chosenOutward);
             GameObject go = Instantiate(pick.prefab, pos, Quaternion.identity, spawnParent);
 
             var creature = go.GetComponent<Creature>();
@@ -147,6 +148,13 @@ namespace Holobiont
             }
 
             creature.Initialize(pick, environment);
+
+            if (config.useSpawnInwardKick && config.spawnInwardSpeed > 0f)
+            {
+                var rb = go.GetComponent<Rigidbody2D>();
+                if (rb) rb.linearVelocity = -chosenOutward * config.spawnInwardSpeed;
+            }
+
             tracked.Add(creature);
             activeUnboundCount++;
         }
@@ -169,9 +177,20 @@ namespace Holobiont
 
         // Sample N perimeter points; score each by how strongly flow points
         // inward across that edge; weighted-pick. No flow field or all-zero
-        // scores → uniform perimeter random.
-        private Vector3 PickUpstreamSpawnPoint(Bounds bounds)
+        // scores → uniform perimeter random. Bounds are optionally inset
+        // first so creatures don't appear exactly on the rim. Returns the
+        // outward normal of the chosen edge so the caller can apply an
+        // inward kick.
+        private Vector3 PickUpstreamSpawnPoint(Bounds bounds, out Vector2 chosenOutward)
         {
+            if (config.useSpawnInset && config.spawnInset > 0f)
+            {
+                Vector3 ext = bounds.extents - new Vector3(config.spawnInset, config.spawnInset, 0f);
+                ext.x = Mathf.Max(0.01f, ext.x);
+                ext.y = Mathf.Max(0.01f, ext.y);
+                bounds = new Bounds(bounds.center, ext * 2f);
+            }
+
             int n = Mathf.Max(1, config.upstreamSampleCount);
             EnsureBuffers(n);
 
@@ -181,6 +200,7 @@ namespace Holobiont
             {
                 RandomPerimeterPoint(bounds, out Vector2 p, out Vector2 outward);
                 perimeterPoints[i] = p;
+                perimeterOutwards[i] = outward;
                 float s = 0f;
                 if (ff)
                 {
@@ -203,10 +223,11 @@ namespace Holobiont
                     if (r <= acc) { idx = i; break; }
                 }
                 picked = perimeterPoints[idx];
+                chosenOutward = perimeterOutwards[idx];
             }
             else
             {
-                RandomPerimeterPoint(bounds, out picked, out _);
+                RandomPerimeterPoint(bounds, out picked, out chosenOutward);
             }
 
             return new Vector3(picked.x, picked.y, bounds.center.z);
@@ -218,6 +239,7 @@ namespace Holobiont
             {
                 perimeterPoints = new Vector2[n];
                 perimeterScores = new float[n];
+                perimeterOutwards = new Vector2[n];
             }
         }
 

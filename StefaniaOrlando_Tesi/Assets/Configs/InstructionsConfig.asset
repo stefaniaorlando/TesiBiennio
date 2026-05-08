@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e811ff2e3d71e44497d87cf957c8c63, type: 3}
+  m_Name: InstructionsConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Holobiont.InstructionsConfig
+  controlsText: "<b>W / S</b> \u2014 Faster / slower breathing rhythm.\n<b>D / A</b>
+    \u2014 Deeper / shallower breath (grows or shrinks the field).\n<b>Space (hold)</b>
+    \u2014 Hold the breath at the current point in the cycle.\n  \u2022 hold mid-exhale
+    \u2192 bonds any unbound creatures inside the field\n  \u2022 hold mid-inhale
+    \u2192 releases your most-stressed bonded creature\n  \u2022 release into the
+    opposite phase to boost the next breath\n<b>Esc</b> \u2014 Pause menu.\n\nPushing
+    parameters off baseline or holding too long drains stamina \u2014 bottom out
+    and you're locked into a forced recovery with no input."
+  howToPlayText: "You are a holobiont \u2014 a colony bound by breath. Survive as
+    long as you can.\n\nYour field breathes on its own. On every exhale it pulls
+    free creatures toward you; on every inhale it pushes them away. Shape the rhythm
+    with WASD \u2014 deeper breaths reach further, faster ones cycle quicker \u2014
+    and hold Space at the right moment to bond a creature (mid-exhale) or release
+    one (mid-inhale). Three types matter:\n\n  \u2022 <b>Nutrici</b> \u2014 convert
+    your breath into energy.\n  \u2022 <b>Scudo</b> \u2014 shield you from environmental
+    stress (temperature, light, humidity, toxicity).\n  \u2022 <b>Hub</b> \u2014
+    raise your energy capacity and creature slots.\n\nEnergy drains every second
+    from upkeep, creature stress, and mismatch between your resistances and the drifting
+    environment. Bond Nutrici to stay in the black, Scudo to survive shifts, and
+    shed stressed creatures before they die. If energy hits zero, the colony cascades
+    and dies."

@@ -12,44 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5caea6d8d9eb7b47b16a5b923699613, type: 3}
   m_Name: HolobiontConfig
   m_EditorClassIdentifier: Assembly-CSharp::Holobiont.HolobiontConfig
-  baseEnergyCapacity: 100
-  startingEnergy: 100
-  baseDrainPerCreaturePerSecond: 0.5
-  stressCostMultiplier: 1
-  environmentMismatchCostMultiplier: 1
+  baseEnergyCapacity: 200
+  startingEnergy: 200
+  baseDrainPerCreaturePerSecond: 0.25
+  stressCostMultiplier: 0.5
+  environmentMismatchCostMultiplier: 0.5
   baseCarryingCapacity: 10
-  energyCapacityPerHub: 0
-  carryingCapacityPerHub: 0
+  energyCapacityPerHub: 25
+  carryingCapacityPerHub: 2
   cascadeTickInterval: 1
-  baseAttractionRadius: 3
-  maxAttractionRadius: 8
-  attractionStrength: 6
-  repulsionStrength: 6
-  attractionFalloff:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 1
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 1
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  bondingRange: 1.5
+  breathField: {fileID: 11400000, guid: acd1b5059ee471a439cc5b1d9b8e2d58, type: 2}
   depthToEnergyMultiplier:
     serializedVersion: 2
     m_Curve:
@@ -66,39 +38,6 @@ MonoBehaviour:
       time: 1
       value: 1
       inSlope: 1
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  breathPhaseToFieldRadius:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: -1
-      value: 0.5
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1.4
-      inSlope: 0
       outSlope: 0
       tangentMode: 0
       weightedMode: 0

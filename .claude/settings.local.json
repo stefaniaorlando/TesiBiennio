@@ -23,7 +23,10 @@
       "mcp__UnityMCP__manage_scene",
       "mcp__UnityMCP__manage_gameobject",
       "mcp__UnityMCP__manage_components",
-      "Bash(Find \"D:\\\\Projects Unity\\\\StefaniaOrlando\\\\StefaniaOrlando_Tesi\\\\Assets\" -name \"*Config*\" -o -name \"*config*\")"
+      "Bash(Find \"D:\\\\Projects Unity\\\\StefaniaOrlando\\\\StefaniaOrlando_Tesi\\\\Assets\" -name \"*Config*\" -o -name \"*config*\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\Projects Unity\\\\StefaniaOrlando\\\\StefaniaOrlando_Tesi\\\\Assets\\\\Scripts\" -Recurse -Filter \"*.cs\")",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Head -30)"
     ]
   }
 }

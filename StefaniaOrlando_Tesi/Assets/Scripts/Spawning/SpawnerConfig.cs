@@ -31,6 +31,20 @@ namespace Holobiont
         [Min(1)]
         public int upstreamSampleCount = 16;
 
+        [Tooltip("Inset the spawn AABB inward before picking a perimeter point so creatures don't appear exactly on the rim.")]
+        public bool useSpawnInset = true;
+
+        [Tooltip("World units to shrink each side of the spawn AABB by. 0 = on the rim.")]
+        [Min(0f)]
+        public float spawnInset = 0.5f;
+
+        [Tooltip("Apply an initial inward velocity at spawn so creatures don't loiter on the rim while waiting for flow.")]
+        public bool useSpawnInwardKick = true;
+
+        [Tooltip("Initial inward speed (world units / sec) applied along the reversed outward normal of the chosen perimeter edge.")]
+        [Min(0f)]
+        public float spawnInwardSpeed = 1.5f;
+
         // ----- Nutrici -----
         [Header("Nutrici")]
         [Tooltip("Nutrici config asset. Leave empty to disable Nutrici spawns.")]

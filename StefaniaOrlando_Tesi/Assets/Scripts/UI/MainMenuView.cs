@@ -89,6 +89,29 @@ namespace Holobiont
         [Tooltip("Optional. Label that mirrors the slider's current value (e.g. '1.0x').")]
         [SerializeField] private TMP_Text timeScaleLabel;
 
+        // ----- Help panels -----
+        [Header("Help panels")]
+        [Tooltip("Source asset for the Controls and How to Play body text. Both labels are populated at OnEnable; leave empty to keep whatever the labels carry from the inspector.")]
+        [SerializeField] private InstructionsConfig instructions;
+
+        [Tooltip("Optional. Button that toggles the Controls panel.")]
+        [SerializeField] private Button controlsToggleButton;
+
+        [Tooltip("Optional. Root GameObject of the Controls panel — flipped active by controlsToggleButton.")]
+        [SerializeField] private GameObject controlsPanel;
+
+        [Tooltip("Optional. TMP label inside controlsPanel; populated from instructions.ControlsText.")]
+        [SerializeField] private TMP_Text controlsBodyLabel;
+
+        [Tooltip("Optional. Button that toggles the How to Play panel.")]
+        [SerializeField] private Button howToPlayToggleButton;
+
+        [Tooltip("Optional. Root GameObject of the How to Play panel — flipped active by howToPlayToggleButton.")]
+        [SerializeField] private GameObject howToPlayPanel;
+
+        [Tooltip("Optional. TMP label inside howToPlayPanel; populated from instructions.HowToPlayText.")]
+        [SerializeField] private TMP_Text howToPlayBodyLabel;
+
         // ----- State -----
         private bool isOpen;
         private bool pausedByMenu;
@@ -120,6 +143,10 @@ namespace Holobiont
                 UpdateTimeScaleLabel(timeScaleSlider.value);
             }
 
+            if (controlsToggleButton)  controlsToggleButton.onClick.AddListener(HandleControlsToggleClicked);
+            if (howToPlayToggleButton) howToPlayToggleButton.onClick.AddListener(HandleHowToPlayToggleClicked);
+            ApplyInstructionsText();
+
             ApplyOpenState(false);
         }
 
@@ -132,6 +159,9 @@ namespace Holobiont
 
             if (hudToggle)        hudToggle.onValueChanged.RemoveListener(HandleHudToggleChanged);
             if (timeScaleSlider)  timeScaleSlider.onValueChanged.RemoveListener(HandleTimeScaleChanged);
+
+            if (controlsToggleButton)  controlsToggleButton.onClick.RemoveListener(HandleControlsToggleClicked);
+            if (howToPlayToggleButton) howToPlayToggleButton.onClick.RemoveListener(HandleHowToPlayToggleClicked);
 
             // Don't strand the clock paused if we get disabled while open.
             if (pausedByMenu && clock) clock.Resume();
@@ -222,6 +252,16 @@ namespace Holobiont
 
         private void HandleHudToggleChanged(bool on) => ApplyHudVisible(on);
 
+        private void HandleControlsToggleClicked()
+        {
+            if (controlsPanel) controlsPanel.SetActive(!controlsPanel.activeSelf);
+        }
+
+        private void HandleHowToPlayToggleClicked()
+        {
+            if (howToPlayPanel) howToPlayPanel.SetActive(!howToPlayPanel.activeSelf);
+        }
+
         private void HandleTimeScaleChanged(float v)
         {
             if (clock) clock.TimeScale = v;
@@ -233,6 +273,19 @@ namespace Holobiont
         {
             isOpen = open;
             if (panelRoot) panelRoot.SetActive(open);
+            if (open)
+            {
+                // Always open with both help sections collapsed — avoids stale state between opens.
+                if (controlsPanel)  controlsPanel.SetActive(false);
+                if (howToPlayPanel) howToPlayPanel.SetActive(false);
+            }
+        }
+
+        private void ApplyInstructionsText()
+        {
+            if (!instructions) return;
+            if (controlsBodyLabel)  controlsBodyLabel.text  = instructions.ControlsText;
+            if (howToPlayBodyLabel) howToPlayBodyLabel.text = instructions.HowToPlayText;
         }
 
         private void ApplyHudVisible(bool visible)

@@ -32,7 +32,7 @@ namespace Holobiont
         // ----- Inward Bias -----
         [Header("Inward Bias")]
         [Tooltip("If enabled, an extra inward velocity is added based on distance from the FlowField origin. Optional containment without walls.")]
-        public bool enableInwardBias = false;
+        public bool enableInwardBias = true;
 
         [Tooltip("Distance from origin (world units, x) → inward speed (world units / sec, y). Curve y is the magnitude pulling toward origin at each distance.")]
         public AnimationCurve inwardBiasByDistance = DefaultInwardBias();
@@ -55,12 +55,14 @@ namespace Holobiont
         public Color gizmoColorHigh = new Color(1.0f, 0.4f, 0.2f, 1.0f);
 
         // ----- Defaults -----
-        // 0 inside a 5-unit safe zone, ramps to 2 by 15 units out.
+        // Slight bowl: nothing in the middle, gentle tug at the rim. Rim pull
+        // ~half of baseFlowSpeed so creatures don't hug the edges without the
+        // bias feeling like an invisible wall.
         private static AnimationCurve DefaultInwardBias()
             => Smooth(new AnimationCurve(
                 new Keyframe(0f, 0f),
-                new Keyframe(5f, 0f),
-                new Keyframe(15f, 2f)));
+                new Keyframe(8f, 0.1f),
+                new Keyframe(15f, 0.5f)));
 
         private static AnimationCurve Smooth(AnimationCurve c)
         {

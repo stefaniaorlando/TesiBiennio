@@ -6,14 +6,21 @@ namespace Holobiont
      * Sibling to HolobiontManager. Translates breath into spatial forces on
      * unbound creatures, plus discrete capture / shed events.
      *
+     * Tunables live on BreathFieldConfig (referenced via HolobiontConfig.BreathField):
+     * radii, hub bonus, force strengths, falloff, breath-phase curve.
+     *
      * Tick (FixedUpdate, matching Creature.FixedUpdate so forces compose cleanly):
-     *   - currentRadius = lerp(baseAttractionRadius, maxAttractionRadius, depth)
-     *                   × breathPhaseToFieldRadius.Evaluate(phase).
-     *   - hold-exhale          → capture every unbound creature inside bondingRange.
+     *   - currentRadius = (lerp(baseRadius, maxRadius, depth) + HubCount × radiusPerHub)
+     *                   × breathPhaseToRadius.Evaluate(phase).
+     *   - hold-exhale          → capture every unbound creature inside currentRadius.
      *   - hold-inhale (rising) → manager.ShedMostStressed().
      *   - otherwise             → push attraction (phase > 0) or repulsion
      *     (phase < 0) onto every unbound creature inside currentRadius, scaled
      *     by attractionFalloff.
+     *
+     * Origin: queries are centered on captureOrigin if set, else this transform.
+     * Wire captureOrigin to the field-ring sprite's transform so the visible
+     * ring and the actual capture/force surface line up.
      *
      * Forces are applied via Creature.ApplyForce (push model). We never cache
      * creature references across frames — OverlapCircleNonAlloc is the
@@ -34,6 +41,9 @@ namespace Holobiont
         [Tooltip("Buffer size for OverlapCircleNonAlloc. Raise this if more than ~32 creatures might be in range at once.")]
         [Min(1), SerializeField] private int overlapBufferSize = 32;
 
+        [Tooltip("Optional. Origin for capture and field-force overlap queries. When set, queries are centered here instead of this GameObject — wire to the field-ring sprite's transform so the visible ring matches the actual capture surface.")]
+        [SerializeField] private Transform captureOrigin;
+
         // ----- Debug -----
         [Header("Debug")]
         [Tooltip("Live attraction/repulsion radius (world units).")]
@@ -46,7 +56,7 @@ namespace Holobiont
         [SerializeField, ReadOnly] private bool isShedding;
 
         // ----- State -----
-        private HolobiontConfig config;
+        private BreathFieldConfig field;
         private Collider2D[] hits;
         private bool wasInhaleHold;
 
@@ -63,10 +73,10 @@ namespace Holobiont
 
         private void OnEnable()
         {
-            config = manager ? manager.Config : null;
-            if (!manager || !config)
+            field = manager && manager.Config ? manager.Config.BreathField : null;
+            if (!manager || !manager.Config || !field)
             {
-                Debug.LogError($"{nameof(HolobiontForceField)} on {name}: missing {nameof(HolobiontManager)} or its {nameof(HolobiontConfig)}.", this);
+                Debug.LogError($"{nameof(HolobiontForceField)} on {name}: missing {nameof(HolobiontManager)}, its {nameof(HolobiontConfig)}, or {nameof(BreathFieldConfig)}.", this);
                 enabled = false;
                 return;
             }
@@ -84,9 +94,10 @@ namespace Holobiont
                 return;
             }
 
-            float depthFactor = Mathf.Lerp(config.baseAttractionRadius, config.maxAttractionRadius, Mathf.Clamp01(breath.Depth));
-            float phaseFactor = Mathf.Max(0f, config.breathPhaseToFieldRadius.Evaluate(breath.Phase));
-            currentRadius = depthFactor * phaseFactor;
+            float depthFactor = Mathf.Lerp(field.baseRadius, field.maxRadius, Mathf.Clamp01(breath.Depth));
+            float hubBonus    = manager.State.HubCount * field.radiusPerHub;
+            float phaseFactor = Mathf.Max(0f, field.breathPhaseToRadius.Evaluate(breath.Phase));
+            currentRadius = (depthFactor + hubBonus) * phaseFactor;
 
             isCapturing = breath.IsExhaleHold;
             isShedding  = breath.IsInhaleHold;
@@ -110,10 +121,14 @@ namespace Holobiont
         }
 
         // ----- Private -----
+        private Vector2 QueryCenter => captureOrigin ? (Vector2)captureOrigin.position : (Vector2)transform.position;
+
         private void CaptureInRange()
         {
-            Vector2 center = transform.position;
-            int count = Physics2D.OverlapCircleNonAlloc(center, config.bondingRange, hits, creatureLayers);
+            if (currentRadius <= 0f) return;
+
+            Vector2 center = QueryCenter;
+            int count = Physics2D.OverlapCircleNonAlloc(center, currentRadius, hits, creatureLayers);
             for (int i = 0; i < count; i++)
             {
                 var hit = hits[i];
@@ -127,13 +142,13 @@ namespace Holobiont
         private void ApplyFieldForces(float phase)
         {
             float strength;
-            if      (phase > 0f) strength =  config.attractionStrength;
-            else if (phase < 0f) strength = -config.repulsionStrength;
+            if      (phase > 0f) strength =  field.attractionStrength;
+            else if (phase < 0f) strength = -field.repulsionStrength;
             else return; // dead zone — no force when breath is steady
 
             if (currentRadius <= 0f) return;
 
-            Vector2 center = transform.position;
+            Vector2 center = QueryCenter;
             int count = Physics2D.OverlapCircleNonAlloc(center, currentRadius, hits, creatureLayers);
             for (int i = 0; i < count; i++)
             {
@@ -147,7 +162,7 @@ namespace Holobiont
                 if (dist < 0.001f) continue;
 
                 float t       = Mathf.Clamp01(dist / currentRadius);
-                float falloff = config.attractionFalloff.Evaluate(t);
+                float falloff = field.attractionFalloff.Evaluate(t);
                 Vector2 dir   = toCenter / dist;
                 creature.ApplyForce(dir * strength * falloff);
             }
@@ -159,13 +174,7 @@ namespace Holobiont
             Gizmos.color = isCapturing ? new Color(1f,   0.8f, 0f,   0.6f)
                          : isShedding  ? new Color(0.4f, 0.7f, 1f,   0.6f)
                                        : new Color(1f,   1f,   1f,   0.25f);
-            Gizmos.DrawWireSphere(transform.position, currentRadius);
-
-            if (config)
-            {
-                Gizmos.color = new Color(0f, 1f, 0.5f, 0.5f);
-                Gizmos.DrawWireSphere(transform.position, config.bondingRange);
-            }
+            Gizmos.DrawWireSphere(QueryCenter, currentRadius);
         }
 #endif
     }

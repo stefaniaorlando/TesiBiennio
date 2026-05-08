@@ -72,6 +72,34 @@ namespace Holobiont
         [Tooltip("Seconds the Start zoom lerp takes. 0 = snap.")]
         [Min(0f)] [SerializeField] private float zoomDuration = 1.0f;
 
+        // ----- Help panels -----
+        [Header("Help panels")]
+        [Tooltip("Source asset for the Controls and How to Play body text. Both labels are populated at OnEnable; leave empty to keep whatever the labels carry from the inspector.")]
+        [SerializeField] private InstructionsConfig instructions;
+
+        [Tooltip("Optional. Button that toggles the Controls panel.")]
+        [SerializeField] private Button controlsToggleButton;
+
+        [Tooltip("Optional. Root GameObject of the Controls panel — flipped active by controlsToggleButton.")]
+        [SerializeField] private GameObject controlsPanel;
+
+        [Tooltip("Optional. TMP label inside controlsPanel; populated from instructions.ControlsText.")]
+        [SerializeField] private TMP_Text controlsBodyLabel;
+
+        [Tooltip("Optional. Button that toggles the How to Play panel.")]
+        [SerializeField] private Button howToPlayToggleButton;
+
+        [Tooltip("Optional. Root GameObject of the How to Play panel — flipped active by howToPlayToggleButton.")]
+        [SerializeField] private GameObject howToPlayPanel;
+
+        [Tooltip("Optional. TMP label inside howToPlayPanel; populated from instructions.HowToPlayText.")]
+        [SerializeField] private TMP_Text howToPlayBodyLabel;
+
+        // ----- HUD -----
+        [Header("HUD")]
+        [Tooltip("GameObjects hidden while the start menu is shown and re-shown on Hide. Typically your two HUD canvases (env + holobiont).")]
+        [SerializeField] private GameObject[] hudRoots;
+
         // ----- Events -----
         [Header("Events")]
         [Tooltip("Fired the moment the Start button is pressed, before the zoom starts. Wire VFX/audio cues here.")]
@@ -94,6 +122,10 @@ namespace Holobiont
 
             if (startButton) startButton.onClick.AddListener(HandleStartClicked);
             if (quitButton)  quitButton.onClick.AddListener(HandleQuitClicked);
+
+            if (controlsToggleButton)  controlsToggleButton.onClick.AddListener(HandleControlsToggleClicked);
+            if (howToPlayToggleButton) howToPlayToggleButton.onClick.AddListener(HandleHowToPlayToggleClicked);
+            ApplyInstructionsText();
 
             SubscribeToSession();
 
@@ -123,6 +155,9 @@ namespace Holobiont
             if (startButton) startButton.onClick.RemoveListener(HandleStartClicked);
             if (quitButton)  quitButton.onClick.RemoveListener(HandleQuitClicked);
 
+            if (controlsToggleButton)  controlsToggleButton.onClick.RemoveListener(HandleControlsToggleClicked);
+            if (howToPlayToggleButton) howToPlayToggleButton.onClick.RemoveListener(HandleHowToPlayToggleClicked);
+
             UnsubscribeFromSession();
 
             if (startRoutine != null) { StopCoroutine(startRoutine); startRoutine = null; }
@@ -146,6 +181,12 @@ namespace Holobiont
             ApplyOrtho(menuOrthoSize);
 
             if (panelRoot) panelRoot.SetActive(true);
+
+            // Always show the title with both help sections collapsed.
+            if (controlsPanel)  controlsPanel.SetActive(false);
+            if (howToPlayPanel) howToPlayPanel.SetActive(false);
+
+            ApplyHudVisible(false);
         }
 
         [ContextMenu("Hide")]
@@ -155,6 +196,8 @@ namespace Holobiont
 
             if (pausedByMenu && clock) clock.Resume();
             pausedByMenu = false;
+
+            ApplyHudVisible(true);
         }
 
         // ----- Handlers -----
@@ -182,6 +225,30 @@ namespace Holobiont
         }
 
         private void HandleSessionStarted() => Hide();
+
+        private void HandleControlsToggleClicked()
+        {
+            if (controlsPanel) controlsPanel.SetActive(!controlsPanel.activeSelf);
+        }
+
+        private void HandleHowToPlayToggleClicked()
+        {
+            if (howToPlayPanel) howToPlayPanel.SetActive(!howToPlayPanel.activeSelf);
+        }
+
+        private void ApplyHudVisible(bool visible)
+        {
+            if (hudRoots == null) return;
+            for (int i = 0; i < hudRoots.Length; i++)
+                if (hudRoots[i]) hudRoots[i].SetActive(visible);
+        }
+
+        private void ApplyInstructionsText()
+        {
+            if (!instructions) return;
+            if (controlsBodyLabel)  controlsBodyLabel.text  = instructions.ControlsText;
+            if (howToPlayBodyLabel) howToPlayBodyLabel.text = instructions.HowToPlayText;
+        }
 
         private void HandleSessionEnded(SessionEndReason reason)
         {

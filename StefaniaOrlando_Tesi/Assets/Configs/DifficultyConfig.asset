@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DifficultyConfig
   m_EditorClassIdentifier: Assembly-CSharp::Holobiont.DifficultyConfig
   initialDifficulty: 0
-  timeToMax: 600
+  timeToMax: 240
   progressEasing:
     serializedVersion: 2
     m_Curve:

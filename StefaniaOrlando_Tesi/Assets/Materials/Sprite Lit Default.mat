@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Force Field Ring
-  m_Shader: {fileID: 4800000, guid: 19d448cae9591c14290a93e242f3ad23, type: 3}
+  m_Name: Sprite Lit Default
+  m_Shader: {fileID: 4800000, guid: e260cfa7296ee7642b167f1eb5be5023, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -41,28 +41,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _CaptureInteriorAmount: 0.6
-    - _CaptureSaturation: 1.4
-    - _CaptureTimeScale: 0.65
-    - _ChannelTintAmount: 0.3
-    - _CurrentRadius: 1
-    - _EdgeSoftness: 0.0115
     - _EnableExternalAlpha: 0
-    - _NoiseScale: 1.5
-    - _ShedOutflowSpeed: 1.5
-    - _ShedOutflowStrength: 0.6
-    - _ShedRingFrequency: 24
-    - _State: 2
-    - _Thickness: 0.029
-    - _ThicknessBreathAmplitude: 0.02
-    - _WaveAmplitude: 0.06
-    - _WaveTimeScale: 0.5
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0.65, g: 0.88, b: 0.78, a: 0.55}
-    - _CaptureColor: {r: 1, g: 0.85, b: 0.4, a: 0.85}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShedColor: {r: 0.45, g: 0.75, b: 1, a: 0.85}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
