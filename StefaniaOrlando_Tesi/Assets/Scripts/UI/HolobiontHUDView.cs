@@ -127,7 +127,7 @@ namespace Holobiont
                 // Range tracks live capacity — hub bonuses can grow it mid-session.
                 int capacity = Mathf.Max(1, s.CarryingCapacity);
                 populationRow.SetRange(0f, capacity);
-                populationRow.SetValue(s.CreatureCount);
+                populationRow.SetValue(s.CreatureCount, $"{s.CreatureCount}/{capacity}");
                 populationRow.SetHighlight(s.AtCapacity);
             }
 

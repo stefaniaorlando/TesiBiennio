@@ -1393,6 +1393,7 @@ GameObject:
   m_Component:
   - component: {fileID: 136167131}
   - component: {fileID: 136167130}
+  - component: {fileID: 136167134}
   - component: {fileID: 136167133}
   m_Layer: 0
   m_Name: Holobiont
@@ -1499,6 +1500,42 @@ MonoBehaviour:
   cascadePulseAmount: 0.5
   deadDarkenAmount: 0.7
   deadShrinkAmount: 0.4
+--- !u!58 &136167134
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 136167129}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_Radius: 1
 --- !u!1 &152867256
 GameObject:
   m_ObjectHideFlags: 0
@@ -4203,7 +4240,7 @@ MonoBehaviour:
   - {fileID: 1899366465}
   timeScaleSlider: {fileID: 1978745166}
   timeScaleLabel: {fileID: 259607034}
-  instructions: {fileID: 11400000, guid: 7a849e791c199294287f7b4258d93577, type: 2}
+  instructions: {fileID: 11400000, guid: 27ea10898722cb843b1537027aa1e657, type: 2}
   controlsToggleButton: {fileID: 753636097}
   controlsPanel: {fileID: 784663743}
   controlsBodyLabel: {fileID: 1455196096}
@@ -6558,7 +6595,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 30, y: 20, z: 1}
+  m_LocalScale: {x: 29, y: 19.25, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 680477522}
@@ -7429,7 +7466,7 @@ MonoBehaviour:
   menuOrthoSize: 15
   gameOrthoSize: 10
   zoomDuration: 1.5
-  instructions: {fileID: 11400000, guid: 7a849e791c199294287f7b4258d93577, type: 2}
+  instructions: {fileID: 11400000, guid: 27ea10898722cb843b1537027aa1e657, type: 2}
   controlsToggleButton: {fileID: 619898247}
   controlsPanel: {fileID: 1520527017}
   controlsBodyLabel: {fileID: 1045134032}
@@ -15427,10 +15464,10 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22
+  m_fontSize: 36.75
   m_fontSizeBase: 22
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0

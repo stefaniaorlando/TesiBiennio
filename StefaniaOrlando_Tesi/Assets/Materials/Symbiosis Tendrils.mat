@@ -42,20 +42,21 @@ Material:
     m_Ints: []
     m_Floats:
     - _BreathMax: 1
-    - _BreathMin: 0.55
-    - _CenterAlpha: 0.65
+    - _BreathMin: 1
+    - _CenterAlpha: 1
     - _EnableExternalAlpha: 0
-    - _NoiseScale: 0.6
+    - _NoiseScale: 4
     - _SoftPower: 2
-    - _StressBreakStart: 0.6
-    - _StressFray: 0.7
-    - _WaveAmplitude: 0.05
-    - _WaveTimeScale: 0.18
+    - _StressBreakStart: 0.192
+    - _StressBreakStrength: 0
+    - _StressFray: 0
+    - _WaveAmplitude: 0.4
+    - _WaveTimeScale: 1
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 0.85, g: 0.95, b: 0.7, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _FrayedColor: {r: 0.55, g: 0.45, b: 0.35, a: 1}
+    - _FrayedColor: {r: 1, g: 0.08018869, b: 0.23856679, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

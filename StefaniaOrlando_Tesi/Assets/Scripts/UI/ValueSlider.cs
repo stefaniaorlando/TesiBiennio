@@ -68,6 +68,13 @@ namespace Holobiont
             if (valueLabel) valueLabel.text = FormatSigned(value, decimals);
         }
 
+        /// <summary>Push the current value with a custom label string (bypasses the signed numeric format).</summary>
+        public void SetValue(float value, string overrideLabel)
+        {
+            if (slider) slider.SetValueWithoutNotify(value);
+            if (valueLabel) valueLabel.text = overrideLabel;
+        }
+
         /// <summary>Show or hide the highlight GameObject.</summary>
         public void SetHighlight(bool active)
         {

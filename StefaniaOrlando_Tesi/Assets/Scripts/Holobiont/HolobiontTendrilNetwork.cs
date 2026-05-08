@@ -119,6 +119,13 @@ namespace Holobiont
         [Range(1, 4)]
         [SerializeField] private int kNeighbors = 2;
 
+        [Tooltip("Also draw tendrils from the closest bonded creatures directly to the holobiont core, like primary roots feeding the center.")]
+        [SerializeField] private bool connectToCore = true;
+
+        [Tooltip("How many of the closest bonded creatures get a direct tendril to the core. Picked by Euclidean distance to the core each frame.")]
+        [Range(0, 6)]
+        [SerializeField] private int coreNearestK = 2;
+
         // ----- Debug -----
         [Header("Debug")]
         [Tooltip("Mirror of pairs emitted this frame.")]
@@ -193,7 +200,9 @@ namespace Holobiont
             }
 
             var bonded = manager.State.BondedCreatures;
-            if (bonded.Count < 2)
+            // Need at least 1 creature for a core tendril, 2 for any peer tendril.
+            // K-NN itself no-ops at n < 2; the core block handles n == 1 cleanly.
+            if (bonded.Count < 1)
             {
                 DeactivateActivePool();
                 pairCount = 0;
@@ -219,8 +228,10 @@ namespace Holobiont
 
             int n = bonded.Count;
             int k = Mathf.Min(kNeighbors, n - 1);
-            if (k <= 0) return;
 
+            // Note: when k <= 0 the peer loop below is a no-op (take == 0), but the
+            // core-connection block still runs so a single bonded creature can still
+            // get a tendril to the core.
             for (int i = 0; i < n; i++)
             {
                 var ci = bonded[i];
@@ -255,6 +266,32 @@ namespace Holobiont
                     pairs.Add((low, high, pairStress));
                 }
             }
+
+            // Optional core connections: pair the K closest bonded creatures directly
+            // with the holobiont core. Encoded with b == -1 (sentinel for "core") so
+            // the existing pool-driving code can branch on it without a separate path.
+            if (connectToCore && coreNearestK > 0)
+            {
+                Vector2 corePos = manager.transform.position;
+
+                nearestBuf.Clear();
+                for (int i = 0; i < n; i++)
+                {
+                    var ci = bonded[i];
+                    if (!ci) continue;
+                    float dSq = ((Vector2)ci.transform.position - corePos).sqrMagnitude;
+                    nearestBuf.Add((i, dSq));
+                }
+
+                SortNearestAscending();
+
+                int takeCore = Mathf.Min(coreNearestK, nearestBuf.Count);
+                for (int x = 0; x < takeCore; x++)
+                {
+                    int idx = nearestBuf[x].idx;
+                    pairs.Add((idx, -1, bonded[idx].Stress));
+                }
+            }
         }
 
         private void SortNearestAscending()
@@ -278,16 +315,28 @@ namespace Holobiont
         {
             EnsureSpritePoolSize(pairs.Count);
 
+            Vector2 corePos = manager.transform.position;
+
             int active = 0;
             for (int p = 0; p < pairs.Count; p++)
             {
                 var pair = pairs[p];
                 var ca = bonded[pair.a];
-                var cb = bonded[pair.b];
-                if (!ca || !cb) continue;
+                if (!ca) continue;
 
                 Vector2 pa = ca.transform.position;
-                Vector2 pb = cb.transform.position;
+                Vector2 pb;
+                if (pair.b == -1)
+                {
+                    pb = corePos;
+                }
+                else
+                {
+                    var cb = bonded[pair.b];
+                    if (!cb) continue;
+                    pb = cb.transform.position;
+                }
+
                 Vector2 dir = pb - pa;
                 float len = dir.magnitude;
                 if (len < 1e-4f) continue;
@@ -348,17 +397,28 @@ namespace Holobiont
             float t           = Time.time * waveTimeScale;
 
             int N = Mathf.Max(2, segmentsPerTendril + 1);
+            Vector2 corePos = manager.transform.position;
 
             int active = 0;
             for (int p = 0; p < pairs.Count; p++)
             {
                 var pair = pairs[p];
                 var ca = bonded[pair.a];
-                var cb = bonded[pair.b];
-                if (!ca || !cb) continue;
+                if (!ca) continue;
 
                 Vector2 pa = ca.transform.position;
-                Vector2 pb = cb.transform.position;
+                Vector2 pb;
+                if (pair.b == -1)
+                {
+                    pb = corePos;
+                }
+                else
+                {
+                    var cb = bonded[pair.b];
+                    if (!cb) continue;
+                    pb = cb.transform.position;
+                }
+
                 Vector2 dir = pb - pa;
                 float len = dir.magnitude;
                 if (len < 1e-4f) continue;

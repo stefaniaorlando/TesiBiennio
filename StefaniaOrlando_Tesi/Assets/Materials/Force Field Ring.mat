@@ -42,21 +42,21 @@ Material:
     m_Ints: []
     m_Floats:
     - _CaptureInteriorAmount: 0.6
-    - _CaptureSaturation: 1.4
-    - _CaptureTimeScale: 0.65
-    - _ChannelTintAmount: 0.3
-    - _CurrentRadius: 1
-    - _EdgeSoftness: 0.0115
+    - _CaptureSaturation: 1.019
+    - _CaptureTimeScale: 0.604
+    - _ChannelTintAmount: 0.15
+    - _CurrentRadius: 2.78
+    - _EdgeSoftness: 0.018
     - _EnableExternalAlpha: 0
-    - _NoiseScale: 1.5
-    - _ShedOutflowSpeed: 1.5
+    - _NoiseScale: 2.025
+    - _ShedOutflowSpeed: 2.47
     - _ShedOutflowStrength: 0.6
-    - _ShedRingFrequency: 24
+    - _ShedRingFrequency: 46.6
     - _State: 2
-    - _Thickness: 0.029
-    - _ThicknessBreathAmplitude: 0.02
-    - _WaveAmplitude: 0.06
-    - _WaveTimeScale: 0.5
+    - _Thickness: 0.023
+    - _ThicknessBreathAmplitude: 0.0065
+    - _WaveAmplitude: 0.233
+    - _WaveTimeScale: 0.169
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 0.65, g: 0.88, b: 0.78, a: 0.55}

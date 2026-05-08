@@ -14,12 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Holobiont.HolobiontConfig
   baseEnergyCapacity: 200
   startingEnergy: 200
-  baseDrainPerCreaturePerSecond: 0.25
-  stressCostMultiplier: 0.5
-  environmentMismatchCostMultiplier: 0.5
+  baseDrainPerCreaturePerSecond: 0.35
+  stressCostMultiplier: 0.65
+  environmentMismatchCostMultiplier: 0.65
   baseCarryingCapacity: 10
-  energyCapacityPerHub: 25
-  carryingCapacityPerHub: 2
+  stackingDecay: 0.85
+  scudoSpecializationBlend: 0.7
+  synergyStrength: 0.25
+  metabolicInflowExponent: 0.9
+  metabolicDrainExponent: 1.1
   cascadeTickInterval: 1
   breathField: {fileID: 11400000, guid: acd1b5059ee471a439cc5b1d9b8e2d58, type: 2}
   depthToEnergyMultiplier:
@@ -79,7 +82,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  baseOrbitRadius: 1.2
+  baseOrbitRadius: 1
   breathPhaseToOrbitRadius:
     serializedVersion: 2
     m_Curve:
@@ -113,4 +116,11 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  boundSpringStrength: 40
+  boundSpringStrength: 10
+  shellPullStrength: 5
+  peerRepelRadius: 0.55
+  peerRepelStrength: 2
+  typeAttractStrength: 0.4
+  typeAttractReachMultiplier: 3
+  positionNoise: 0.1
+  driftSpeed: 0.6

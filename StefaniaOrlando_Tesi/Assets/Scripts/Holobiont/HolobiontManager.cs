@@ -9,10 +9,19 @@ namespace Holobiont
      * Owns the holobiont's runtime state and runs the energy + composition tick.
      *
      * Responsibilities:
-     *   - energy economy: inflow (breathDepth × Σ nutrici efficiency × conversion)
-     *     minus drain (base per-creature + stress + environment mismatch).
+     *   - energy economy:
+     *       inflow = breathDepth × Σ_rank (nutrici_eff × conversion × decay^rank)
+     *                            × (1 + synergy × diversity)
+     *                            × metabolic^inflowExp
+     *       drain  = (baseDrain × N + stressSum + mismatch(perAxisTolerance))
+     *                × metabolic^drainExp
      *   - composition: TryBond / Release maintain the bonded list, type counts,
-     *     resistance profile, and carrying capacity.
+     *     and per-hub-asset capacity bonuses (energy + slots).
+     *   - resistance: per-axis tolerance summed from each scudo's affinity-
+     *     specialized contribution, with stacking decay applied per-axis so
+     *     covering different axes avoids the diminishing-returns penalty.
+     *     Recomputed every Tick because scudo efficiency drifts with the
+     *     environment.
      *   - cascade failure: when energy hits zero, a coroutine sheds the most-
      *     stressed creature each interval until the list empties (then Dead).
      *   - bound positioning: every Update, bonded creatures are assigned spring
@@ -217,7 +226,7 @@ namespace Holobiont
             creature.OnStressDeath += HandleCreatureStressDeath;
 
             UpdateTypeCounts();
-            RecalculateDerivedState();
+            RecalculateComposition();
             MirrorState();
 
             OnCreatureBonded?.Invoke(creature);
@@ -237,7 +246,7 @@ namespace Holobiont
                 creature.transform.SetParent(null, true);
 
             UpdateTypeCounts();
-            RecalculateDerivedState();
+            RecalculateComposition();
             MirrorState();
 
             OnCreatureReleased?.Invoke(creature);
@@ -280,20 +289,21 @@ namespace Holobiont
             bool hasBreath  = breath != null;
             bool inRecovery = hasBreath && breath.InRecovery;
 
-            // Inflow: breath depth shapes a per-second multiplier, scaled by total
-            // nutrici conversion (each nutrici contributes its base rate × current
-            // affinity efficiency). During recovery the player can't breathe
+            // Resistance drifts with each scudo's affinity efficiency, so refresh
+            // it every tick. Composition (max energy, capacity) only changes on
+            // bond / release and is handled in RecalculateComposition.
+            RecalculateResistance();
+
+            // Inflow: breath depth shapes a per-second multiplier, scaled by the
+            // sum of nutrici contributions with rank-decay so monoculture stacking
+            // hits diminishing returns. A diversity-weighted synergy bonus rewards
+            // mixed compositions. During recovery the player can't breathe
             // intentionally — inflow collapses to 0 even if depth is nonzero.
             float breathDepth   = hasBreath ? breath.Depth : 0f;
             float breathEnergy  = inRecovery ? 0f : config.depthToEnergyMultiplier.Evaluate(breathDepth);
-            float nutriciInflow = 0f;
-            for (int i = 0; i < state.BondedCreatures.Count; i++)
-            {
-                var c = state.BondedCreatures[i];
-                if (!c || c.Type != CreatureType.Nutrici || !c.Config) continue;
-                nutriciInflow += c.AffinityEfficiency * c.Config.GetEnergyConversion();
-            }
-            float totalInflow = breathEnergy * nutriciInflow;
+            float nutriciInflow = ComputeNutriciInflow();
+            float synergy       = 1f + config.synergyStrength * ComputeDiversityScore();
+            float totalInflow   = breathEnergy * nutriciInflow * synergy;
 
             // Drain: base per creature + summed stress + environment mismatch.
             float baseDrain = state.CreatureCount * config.baseDrainPerCreaturePerSecond;
@@ -308,14 +318,15 @@ namespace Holobiont
             float mismatchDrain = state.Resistance.GetMismatchCost(environment) * config.environmentMismatchCostMultiplier;
             float totalDrain    = baseDrain + stressDrain + mismatchDrain;
 
-            // Metabolic rate: frequency scales BOTH sides of the equation so fast
-            // breathing is a tempo change, not a free power boost (design decision #6).
-            // Cached on state so HUDs / VFX can read it without re-evaluating the curve.
+            // Metabolic rate: frequency scales both sides, but with separate
+            // exponents so fast breathing becomes a real tradeoff (default 0.9
+            // on inflow, 1.1 on drain — burst output at a steeper cost). Set
+            // both exponents to 1 for the old symmetric behaviour.
             state.MetabolicRate = hasBreath
                 ? Mathf.Max(0f, config.frequencyToMetabolicRate.Evaluate(breath.Frequency))
                 : 1f;
-            totalInflow *= state.MetabolicRate;
-            totalDrain  *= state.MetabolicRate;
+            totalInflow *= Mathf.Pow(state.MetabolicRate, config.metabolicInflowExponent);
+            totalDrain  *= Mathf.Pow(state.MetabolicRate, config.metabolicDrainExponent);
 
             state.NetEnergyFlow = totalInflow - totalDrain;
             state.Energy = Mathf.Clamp(state.Energy + state.NetEnergyFlow * dt, 0f, state.MaxEnergy);
@@ -323,27 +334,250 @@ namespace Holobiont
             UpdatePhase();
         }
 
+        // Per-tick scratch buffers for sorting creature contributions. Sized to
+        // hold any reasonable carrying capacity; clamped on use to avoid GC.
+        private const int MAX_INLINE_CREATURES = 64;
+        private readonly float[] sortBuffer = new float[MAX_INLINE_CREATURES];
+
+        /// <summary>
+        /// Σ_rank (eff × baseConv × decay^rank). Sorted descending so the strongest
+        /// nutrici always claims the rank-0 slot (= full contribution). decay = 1
+        /// reproduces the linear-stacking behaviour; decay &lt; 1 makes additional
+        /// nutrici diminish in value, capping monoculture spam.
+        /// </summary>
+        private float ComputeNutriciInflow()
+        {
+            int count = 0;
+            for (int i = 0; i < state.BondedCreatures.Count && count < MAX_INLINE_CREATURES; i++)
+            {
+                var c = state.BondedCreatures[i];
+                if (!c || c.Type != CreatureType.Nutrici || !c.Config) continue;
+                float v = c.AffinityEfficiency * c.Config.GetEnergyConversion();
+                if (v > 0f) sortBuffer[count++] = v;
+            }
+            if (count == 0) return 0f;
+
+            SortDescending(sortBuffer, count);
+
+            float total = 0f;
+            float weight = 1f;
+            float decay = Mathf.Clamp(config.stackingDecay, 0.0001f, 1f);
+            for (int i = 0; i < count; i++)
+            {
+                total += sortBuffer[i] * weight;
+                weight *= decay;
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// Shannon entropy of the {nutrici, scudo, hub} count distribution,
+        /// normalized by ln(3) so the score is in [0,1]. Returns 0 for a pure
+        /// monoculture, 1 for a perfectly balanced 1:1:1 mix. p=0 terms are
+        /// skipped (ln 0 is undefined; their contribution is 0 in the limit).
+        /// </summary>
+        private float ComputeDiversityScore()
+        {
+            int total = state.CreatureCount;
+            if (total <= 1) return 0f;
+            float invTotal = 1f / total;
+            float h = 0f;
+            if (state.NutriciCount > 0) { float p = state.NutriciCount * invTotal; h -= p * Mathf.Log(p); }
+            if (state.ScudoCount   > 0) { float p = state.ScudoCount   * invTotal; h -= p * Mathf.Log(p); }
+            if (state.HubCount     > 0) { float p = state.HubCount     * invTotal; h -= p * Mathf.Log(p); }
+            const float LN3 = 1.0986123f; // ln(3) — entropy of a perfectly balanced 3-bucket distribution.
+            return Mathf.Clamp01(h / LN3);
+        }
+
+        /// <summary>Per-axis scudo tolerance: each scudo distributes (eff × baseRes) across the four axes weighted by its affinity specialization, then the per-axis stack is sorted and decayed independently. Spreading scudos across different specialty axes avoids the stacking penalty entirely.</summary>
+        private void RecalculateResistance()
+        {
+            int scudoCount = state.ScudoCount;
+            if (scudoCount == 0)
+            {
+                state.Resistance = default;
+                return;
+            }
+
+            // Per-axis contribution arrays: stack-allocated since scudo count is bounded by carrying capacity (~tens).
+            int n = Mathf.Min(scudoCount, MAX_INLINE_CREATURES);
+            Span<float> tBuf = stackalloc float[MAX_INLINE_CREATURES];
+            Span<float> lBuf = stackalloc float[MAX_INLINE_CREATURES];
+            Span<float> hBuf = stackalloc float[MAX_INLINE_CREATURES];
+            Span<float> xBuf = stackalloc float[MAX_INLINE_CREATURES];
+            int filled = 0;
+
+            float specBlend = Mathf.Clamp01(config.scudoSpecializationBlend);
+            float baseShare = (1f - specBlend) * 0.25f;
+
+            for (int i = 0; i < state.BondedCreatures.Count && filled < n; i++)
+            {
+                var c = state.BondedCreatures[i];
+                if (!c || c.Type != CreatureType.Scudo || !c.Config) continue;
+
+                float magnitude = c.Config.GetResistanceContribution() * c.AffinityEfficiency;
+                if (magnitude <= 0f) continue;
+
+                var aff = c.Affinity;
+                float sT = Mathf.Abs(aff.idealTemperature - 0.5f) * 2f;
+                float sL = Mathf.Abs(aff.idealLight       - 0.5f) * 2f;
+                float sH = Mathf.Abs(aff.idealHumidity    - 0.5f) * 2f;
+                float sX = Mathf.Abs(aff.idealToxicity    - 0.5f) * 2f;
+                float sSum = sT + sL + sH + sX;
+
+                float wT, wL, wH, wX;
+                if (sSum < 1e-4f)
+                {
+                    // Pure generalist scudo (affinity at the centre on every axis): split evenly.
+                    wT = wL = wH = wX = 0.25f;
+                }
+                else
+                {
+                    float invS = specBlend / sSum;
+                    wT = baseShare + sT * invS;
+                    wL = baseShare + sL * invS;
+                    wH = baseShare + sH * invS;
+                    wX = baseShare + sX * invS;
+                }
+
+                tBuf[filled] = magnitude * wT;
+                lBuf[filled] = magnitude * wL;
+                hBuf[filled] = magnitude * wH;
+                xBuf[filled] = magnitude * wX;
+                filled++;
+            }
+
+            float decay = Mathf.Clamp(config.stackingDecay, 0.0001f, 1f);
+            state.Resistance = new ResistanceProfile
+            {
+                temperatureTolerance = SumWithDecay(tBuf, filled, decay),
+                lightTolerance       = SumWithDecay(lBuf, filled, decay),
+                humidityTolerance    = SumWithDecay(hBuf, filled, decay),
+                toxicityTolerance    = SumWithDecay(xBuf, filled, decay)
+            };
+        }
+
+        /// <summary>Sort a span of floats descending in place, then sum entries × decay^rank. Insertion sort because the typical N (creatures of one type) is small.</summary>
+        private static float SumWithDecay(Span<float> values, int count, float decay)
+        {
+            if (count == 0) return 0f;
+            SortDescending(values, count);
+            float total = 0f;
+            float weight = 1f;
+            for (int i = 0; i < count; i++)
+            {
+                total += values[i] * weight;
+                weight *= decay;
+            }
+            return total;
+        }
+
+        private static void SortDescending(Span<float> values, int count)
+        {
+            for (int i = 1; i < count; i++)
+            {
+                float v = values[i];
+                int j = i - 1;
+                while (j >= 0 && values[j] < v)
+                {
+                    values[j + 1] = values[j];
+                    j--;
+                }
+                values[j + 1] = v;
+            }
+        }
+
+        private static void SortDescending(float[] values, int count) => SortDescending(values.AsSpan(), count);
+
         private void UpdateBoundCreaturePositions()
         {
             int n = state.BondedCreatures.Count;
             if (n == 0) return;
 
+            // Shell radius: breath-modulated preferred distance from center. Not a hard
+            // ring — creatures organize around it via shell pull + peer interactions.
             float phaseFactor = breath != null
                 ? Mathf.Max(0f, config.breathPhaseToOrbitRadius.Evaluate(breath.Phase))
                 : 1f;
-            float radius = config.baseOrbitRadius * phaseFactor;
-            Vector2 center = transform.position;
+            float shellRadius = config.baseOrbitRadius * phaseFactor;
+            Vector2 center    = transform.position;
+
+            float peerR      = Mathf.Max(1e-3f, config.peerRepelRadius);
+            float peerR2     = peerR * peerR;
+            float typeReach  = peerR * Mathf.Max(1f, config.typeAttractReachMultiplier);
+            float typeReach2 = typeReach * typeReach;
+            float dt         = Time.deltaTime;
 
             for (int i = 0; i < n; i++)
             {
                 var c = state.BondedCreatures[i];
                 if (!c) continue;
-                // Even distribution around the ring, plus a small per-creature offset
-                // (hash-derived) so identical counts don't collapse into perfect symmetry.
-                float baseAngle = (i / (float)n) * Mathf.PI * 2f;
-                float jitter    = ((c.GetHashCode() & 0xFFFF) / 65535f) * 0.4f;
-                float angle     = baseAngle + jitter;
-                Vector2 target  = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+
+                Vector2 cp = c.transform.position;
+
+                // Shell pull: outside the shell pulls inward, inside pushes outward.
+                // Sign of `overshoot` carries the direction.
+                Vector2 toCenter     = center - cp;
+                float   distToCenter = toCenter.magnitude;
+                Vector2 force;
+                if (distToCenter > 1e-4f)
+                {
+                    float overshoot = distToCenter - shellRadius;
+                    force = (toCenter / distToCenter) * overshoot * config.shellPullStrength;
+                }
+                else
+                {
+                    // Right at center — kick out in a deterministic direction so it doesn't NaN.
+                    int   h    = c.GetHashCode();
+                    float ang  = ((h & 0xFFFF) / 65535f) * Mathf.PI * 2f;
+                    force = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * shellRadius * config.shellPullStrength;
+                }
+
+                // Peer interactions: close-range repulsion (kills overlap, drives spread),
+                // optional same-type attraction beyond the repel radius (mosaic clumping).
+                for (int j = 0; j < n; j++)
+                {
+                    if (i == j) continue;
+                    var cj = state.BondedCreatures[j];
+                    if (!cj) continue;
+
+                    Vector2 d     = cp - (Vector2)cj.transform.position;
+                    float   dSq   = d.sqrMagnitude;
+
+                    if (dSq < 1e-6f)
+                    {
+                        // Co-located — deterministic kick by index pair, avoids randomness flicker.
+                        float ph = ((i * 7919 + j * 6151) & 0xFFFF) / 65535f * Mathf.PI * 2f;
+                        force += new Vector2(Mathf.Cos(ph), Mathf.Sin(ph)) * peerR * config.peerRepelStrength * 0.5f;
+                        continue;
+                    }
+
+                    float   dist = Mathf.Sqrt(dSq);
+                    Vector2 dir  = d / dist;
+
+                    if (dSq < peerR2)
+                    {
+                        float fall = (peerR - dist) / peerR;
+                        force += dir * fall * config.peerRepelStrength;
+                    }
+                    else if (config.typeAttractStrength > 0f && c.Type == cj.Type && dSq < typeReach2)
+                    {
+                        float pull = (typeReach - dist) / (typeReach - peerR);
+                        force -= dir * pull * config.typeAttractStrength;
+                    }
+                }
+
+                // Subtle organic drift — keeps the cluster alive even when settled.
+                if (config.positionNoise > 0f)
+                {
+                    int   h         = c.GetHashCode();
+                    float driftPh   = ((h >> 8) & 0xFFFF) / 65535f * Mathf.PI * 2f;
+                    float driftT    = Time.time * config.driftSpeed;
+                    force += new Vector2(Mathf.Sin(driftT + driftPh),
+                                         Mathf.Cos(driftT * 0.83f + driftPh * 1.7f)) * config.positionNoise;
+                }
+
+                Vector2 target = cp + force * dt;
                 c.SetSpringTarget(target, config.boundSpringStrength);
             }
         }
@@ -434,30 +668,30 @@ namespace Holobiont
             state.HubCount     = h;
         }
 
-        private void RecalculateDerivedState()
+        /// <summary>
+        /// Recompute MaxEnergy and CarryingCapacity by summing each bonded hub's
+        /// per-asset bonuses (HubConfig.energyCapacityBonus / carryingCapacityBonus).
+        /// Different hub variants therefore contribute different bonuses — the old
+        /// uniform per-hub multiplier on HolobiontConfig is gone. Called only on
+        /// bond / release; resistance lives on its own dynamic recompute.
+        /// </summary>
+        private void RecalculateComposition()
         {
-            // Hub bonuses: defaults are 0 in Phase 1 — code path stays warm for tuning.
-            state.MaxEnergy        = config.baseEnergyCapacity   + state.HubCount * config.energyCapacityPerHub;
-            state.CarryingCapacity = config.baseCarryingCapacity + state.HubCount * config.carryingCapacityPerHub;
-            if (state.Energy > state.MaxEnergy) state.Energy = state.MaxEnergy;
-
-            // Resistance: each scudo contributes baseResistanceContribution * efficiency
-            // uniformly to all four axes. Phase 2 may weight by per-scudo affinity.
-            float tolerance = 0f;
+            float capacityBonus = 0f;
+            int   slotBonus     = 0;
             for (int i = 0; i < state.BondedCreatures.Count; i++)
             {
                 var c = state.BondedCreatures[i];
-                if (!c || c.Type != CreatureType.Scudo || !c.Config) continue;
-                tolerance += c.Config.GetResistanceContribution() * c.AffinityEfficiency;
+                if (!c || c.Type != CreatureType.Hub || !c.Config) continue;
+                capacityBonus += c.Config.GetCapacityBonus();
+                slotBonus     += c.Config.GetSlotBonus();
             }
-            tolerance = Mathf.Clamp(tolerance, 0f, 1f);
-            state.Resistance = new ResistanceProfile
-            {
-                temperatureTolerance = tolerance,
-                lightTolerance       = tolerance,
-                humidityTolerance    = tolerance,
-                toxicityTolerance    = tolerance
-            };
+
+            state.MaxEnergy        = config.baseEnergyCapacity   + capacityBonus;
+            state.CarryingCapacity = config.baseCarryingCapacity + slotBonus;
+            if (state.Energy > state.MaxEnergy) state.Energy = state.MaxEnergy;
+
+            RecalculateResistance();
         }
 
         private void MirrorState()

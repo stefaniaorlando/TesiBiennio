@@ -44,5 +44,5 @@ MonoBehaviour:
   unboundLifetime: 30
   unboundLinearDamping: 0.5
   boundLinearDamping: 4
-  energyCapacityBonus: 50
-  carryingCapacityBonus: 1
+  energyCapacityBonus: 25
+  carryingCapacityBonus: 2

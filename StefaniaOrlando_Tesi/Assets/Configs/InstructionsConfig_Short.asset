@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e811ff2e3d71e44497d87cf957c8c63, type: 3}
+  m_Name: InstructionsConfig_Short
+  m_EditorClassIdentifier: Assembly-CSharp::Holobiont.InstructionsConfig
+  controlsText: "<b>W / S</b> \u2014 Faster / slower breath.\n\r\n<b>D / A</b> \u2014
+    Deeper / shallower breath (sizes the field).\n\r\n<b>Space</b> \u2014 Hold breath.
+    Mid-exhale bonds creatures in the field; mid-inhale releases the most-stressed.\n\r\n<b>Esc</b>
+    \u2014 Pause.\r\n\r\nOff-baseline or held too long drains stamina; empty = forced
+    recovery."
+  howToPlayText: "You are a holobiont \u2014 a colony bound by breath. Survive as
+    long as you can.\r\n\r\nYour field breathes on its own: exhales pull free creatures
+    in, inhales push them out. Use WASD to shape the rhythm and Space to hold a breath
+    \u2014 mid-exhale to bond, mid-inhale to release.\r\n\r\n\u2022 <b>Nutrici</b>
+    feed you energy.\n\u2022 <b>Scudo</b> shield you from environment shifts.\n\u2022
+    <b>Hub</b> raises capacity and slots.\r\n\r\nEnergy drains from upkeep, stress,
+    and resistance mismatch. Hit zero and the colony cascades."

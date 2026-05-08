@@ -41,6 +41,31 @@ namespace Holobiont
         [Tooltip("Distance from center, normalized to current radius (0 = center, 1 = edge), mapped to a force multiplier. Default linear: max pull at the edge, no pull at the center, so creatures don't oscillate through origin.")]
         public AnimationCurve attractionFalloff = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
+        // ----- Hold Charge -----
+        [Header("Hold Charge")]
+        [Tooltip("Seconds of breath-hold needed to reach full charge (1.0). Charge ramps from 0 at hold start, resets to 0 the frame the hold ends.")]
+        [Min(0.01f)] public float holdChargeTime = 1.5f;
+
+        [Tooltip("Hold time normalized to holdChargeTime (0..1) mapped to charge strength (0..1). Default linear; ease-in for slower buildup, ease-out for snappier feel.")]
+        public AnimationCurve holdChargeCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
+        [Tooltip("Max attraction force added on top of the discrete bond capture during exhale-hold, scaled by charge.")]
+        [Min(0f)] public float holdAttractStrength = 12f;
+
+        [Tooltip("Max repulsion force added on top of the discrete shed during inhale-hold, scaled by charge.")]
+        [Min(0f)] public float holdRepulsionStrength = 12f;
+
+        [Tooltip("Extra radius (world units) added at full charge — field swells outward from the current breath-driven radius so longer holds reach farther creatures.")]
+        [Min(0f)] public float holdRadiusBonus = 6f;
+
+        // ----- Bond Throttle -----
+        [Header("Bond Throttle")]
+        [Tooltip("Base number of creatures bonded per exhale-hold rising edge before hub bonuses. The closest N unbound creatures inside the breath ring are captured in one batch; further creatures drifting in during the same hold are ignored.")]
+        [Min(0)] public int baseBondsPerHold = 1;
+
+        [Tooltip("Extra bonds per hold contributed per bonded hub (floored). Ties hub investment to the same scaling axis as carrying capacity and field reach.")]
+        [Min(0f)] public float bondsPerHub = 0.5f;
+
         // ----- Ring Visuals -----
         [Header("Ring Visuals")]
         [Tooltip("Idle ring color (no capture, no shed).")]

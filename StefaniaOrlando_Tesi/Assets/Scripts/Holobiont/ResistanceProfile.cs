@@ -3,12 +3,17 @@ using UnityEngine;
 namespace Holobiont
 {
     /*
-     * Per-axis tolerance widths in normalized [0,1] space, summed from
-     * bonded scudo contributions. Phase 1 simplification: each scudo's
-     * baseResistanceContribution * efficiency is added to all four axes
-     * uniformly — Phase 2 may weight per-axis by the scudo's own affinity.
+     * Per-axis tolerance widths, summed from bonded scudo contributions in
+     * HolobiontManager.RecalculateResistance. Each scudo's
+     * (baseResistanceContribution × efficiency) is split across the four axes
+     * weighted by its affinity specialization (extreme axes get more, neutral
+     * axes get less), then sorted and decayed per axis so spreading scudos
+     * across different specialty axes avoids the stacking-decay penalty.
      *
-     * Mismatch cost per axis: max(0, |envAxis - 0.5| - toleranceAxis).
+     * Tolerances are unbounded above: a stack of well-affined scudos can drive
+     * an axis past 1, completely cancelling that axis's mismatch cost.
+     *
+     * Mismatch cost per axis: max(0, |envAxis − 0.5| − toleranceAxis).
      * The center is pinned to 0.5 (a neutral midpoint) until a more
      * sophisticated centering rule is required.
      *

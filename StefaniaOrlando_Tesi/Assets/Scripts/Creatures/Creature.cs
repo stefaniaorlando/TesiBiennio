@@ -49,6 +49,14 @@ namespace Holobiont
         [Tooltip("Seconds remaining before an unbound creature despawns. 0 = no expiry.")]
         [SerializeField, ReadOnly] private float unboundTimer;
 
+        // ----- Targeting Highlights -----
+        [Header("Targeting Highlights")]
+        [Tooltip("Optional child object shown when this creature is among the closest unbound creatures the holobiont would capture next exhale-hold. Toggled via SetBondCandidate.")]
+        [SerializeField] private GameObject bondCandidateHighlight;
+
+        [Tooltip("Optional child object shown when this creature is currently the most-stressed bonded creature (next to be shed). Toggled via SetShedCandidate.")]
+        [SerializeField] private GameObject shedCandidateHighlight;
+
         // ----- Internal state -----
         // Spring (bound regime)
         private Vector2 springTarget;
@@ -158,6 +166,8 @@ namespace Holobiont
         {
             bondStatus = BondStatus.Bound;
             unboundTimer = 0f;
+            // The bond-candidate highlight is for unbound creatures only; clear it on transition.
+            SetBondCandidate(false);
             ApplyDampingForCurrentStatus();
         }
 
@@ -167,7 +177,23 @@ namespace Holobiont
             bondStatus = BondStatus.Unbound;
             unboundTimer = config ? config.unboundLifetime : 0f;
             hasSpringTarget = false;
+            // The shed-candidate highlight is for bonded creatures only; clear it on transition.
+            SetShedCandidate(false);
             ApplyDampingForCurrentStatus();
+        }
+
+        /// <summary>Toggle the "next to bond" highlight (closest unbound creature inside the breath ring). Safe if no highlight object is assigned.</summary>
+        public void SetBondCandidate(bool on)
+        {
+            if (bondCandidateHighlight && bondCandidateHighlight.activeSelf != on)
+                bondCandidateHighlight.SetActive(on);
+        }
+
+        /// <summary>Toggle the "next to shed" highlight (most-stressed bonded creature). Safe if no highlight object is assigned.</summary>
+        public void SetShedCandidate(bool on)
+        {
+            if (shedCandidateHighlight && shedCandidateHighlight.activeSelf != on)
+                shedCandidateHighlight.SetActive(on);
         }
 
         /// <summary>External force (flow field, holobiont attraction/repulsion).</summary>

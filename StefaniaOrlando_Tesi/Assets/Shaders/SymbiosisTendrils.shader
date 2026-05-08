@@ -8,20 +8,21 @@ Shader "Holobiont/SymbiosisTendrils"
      *
      * Per-instance contract (driven by the CPU pool):
      *   transform — position = midpoint of A and B; rotation aligns local +X
-     *               with the A→B direction (so local +Y is the world-space
-     *               perpendicular); localScale = (lengthAB, width, 1).
+     *               with the A→B direction (so the sprite's UV.x runs
+     *               along the ribbon, UV.y across); localScale =
+     *               (lengthAB, width, 1).
      *   color.r   — pair stress in [0,1] (avg of the two creatures).
      *
-     * Inside the shader:
-     *   uv.x            — tAlong (0 at A, 1 at B), used for endpoint taper.
-     *   uv.y → side     — remapped from [0,1] to [-1,+1] for cross-section falloff.
-     *   UNITY_MATRIX_M  — world-space perpendicular is read off the model
-     *                     matrix's +Y column (normalized), so the noise
-     *                     displacement direction matches whatever the CPU set.
-     *
-     * Stress reading: thinner soft falloff (alpha drops) plus, past
-     * _StressBreakStart, world-space noise punches gaps in the ribbon.
-     * No flicker.
+     * Fragment-only stylization (vert is the simple CreatureSDF pattern —
+     * URP 2D batching can collapse UNITY_MATRIX_M to identity, so we don't
+     * rely on per-vertex world-space math):
+     *   uv.x  → tAlong  (0 at A, 1 at B); endpoint taper.
+     *   uv.y  → side    (remapped to -1..+1); soft cross-section falloff.
+     *   wobble  — UV-space side shift driven by world-noise + time.
+     *   stress  — color shift toward the frayed tint, alpha attenuation, and
+     *             past _StressBreakStart, world-noise gap-punching whose
+     *             max depth is bounded by _StressBreakStrength so the
+     *             ribbon never disappears entirely.
      *
      * Globals (from HolobiontShaderGlobals.cs):
      *   _HoloBreathPhase — alpha modulation; the network breathes with the player.
@@ -33,18 +34,19 @@ Shader "Holobiont/SymbiosisTendrils"
         _BaseColor          ("Base color (healthy)",       Color) = (0.85, 0.95, 0.7, 1)
         _FrayedColor        ("Frayed color (stressed)",    Color) = (0.55, 0.45, 0.35, 1)
 
-        _CenterAlpha        ("Center alpha (max)",         Range(0, 1))   = 0.65
+        _CenterAlpha        ("Center alpha (max)",         Range(0, 1))   = 0.85
         _SoftPower          ("Cross-section softness",     Range(0.5, 6)) = 2
 
-        _BreathMin          ("Breath min mult",            Range(0, 1))   = 0.55
+        _BreathMin          ("Breath min mult",            Range(0, 1))   = 0.6
         _BreathMax          ("Breath max mult",            Range(0, 1))   = 1.0
 
         _NoiseScale         ("World noise scale",          Range(0.05, 4)) = 0.6
-        _WaveAmplitude      ("Wave amplitude",             Range(0, 0.4)) = 0.05
+        _WaveAmplitude      ("Wave amplitude (uv.y)",      Range(0, 0.4)) = 0.08
         _WaveTimeScale      ("Wave time scale",            Range(0, 1))   = 0.18
 
-        _StressFray         ("Stress alpha drop",          Range(0, 1))   = 0.7
+        _StressFray         ("Stress alpha drop",          Range(0, 1))   = 0.5
         _StressBreakStart   ("Stress break threshold",     Range(0, 1))   = 0.6
+        _StressBreakStrength("Stress break strength",      Range(0, 1))   = 0.4
     }
 
     SubShader
@@ -55,6 +57,7 @@ Shader "Holobiont/SymbiosisTendrils"
             "RenderPipeline"  = "UniversalPipeline"
             "Queue"           = "Transparent"
             "IgnoreProjector" = "True"
+            "PreviewType"     = "Plane"
         }
 
         Pass
@@ -86,77 +89,69 @@ Shader "Holobiont/SymbiosisTendrils"
                 float  _WaveTimeScale;
                 float  _StressFray;
                 float  _StressBreakStart;
+                float  _StressBreakStrength;
             CBUFFER_END
 
+            // Globals — set by HolobiontShaderGlobals.
             float _HoloBreathPhase;
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float2 uv         : TEXCOORD0; // sprite UVs (0..1, 0..1)
-                float4 color      : COLOR;     // SpriteRenderer.color — r = pairStress
+                float2 uv         : TEXCOORD0;
+                float4 color      : COLOR;
             };
 
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
-                float2 uv          : TEXCOORD0;
-                float2 uvWorld     : TEXCOORD1;
-                float4 color       : COLOR;
+                float2 uv          : TEXCOORD0; // 0..1 across the sprite
+                float2 uvWorld     : TEXCOORD1; // for world-coord noise
+                float4 spriteColor : COLOR;
             };
 
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
-                float t      = _Time.y * _WaveTimeScale;
-                float tAlong = IN.uv.x;
-                float taper  = sin(tAlong * 3.14159265);
-
-                float3 wp = TransformObjectToWorld(IN.positionOS.xyz);
-
-                // World-space perpendicular comes from the model matrix's +Y column.
-                // CPU rotates the sprite so local +X is along the ribbon (A→B), so
-                // local +Y is the perpendicular. Non-uniform scale (length × width)
-                // means we have to normalize before using it as a direction.
-                float2 perpWorld = mul((float3x3)UNITY_MATRIX_M, float3(0, 1, 0)).xy;
-                float  perpLen   = length(perpWorld);
-                perpWorld = (perpLen > 1e-6) ? perpWorld / perpLen : float2(0, 1);
-
-                float n    = fbm(wp.xy * _NoiseScale + float2(t, t * 0.7), 2) - 0.5;
-                float wave = n * _WaveAmplitude * taper;
-                wp.xy += perpWorld * wave;
-
-                OUT.positionHCS = TransformWorldToHClip(wp);
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                float3 wp       = TransformObjectToWorld(IN.positionOS.xyz);
                 OUT.uv          = IN.uv;
                 OUT.uvWorld     = wp.xy;
-                OUT.color       = IN.color;
+                OUT.spriteColor = IN.color;
                 return OUT;
             }
 
             half4 frag(Varyings IN) : SV_Target
             {
-                // Sprite UVs go [0,1] across the quad. Remap uv.y to [-1,+1] for
-                // the symmetric cross-section falloff used downstream.
-                float side       = IN.uv.y * 2.0 - 1.0;
+                float t          = _Time.y * _WaveTimeScale;
                 float tAlong     = IN.uv.x;
-                float pairStress = saturate(IN.color.r);
+                float pairStress = saturate(IN.spriteColor.r);
+
+                // Wobble: shift the cross-section coordinate by a world-noise
+                // sample, tapered to zero at the endpoints.
+                float taper      = sin(tAlong * 3.14159265);
+                float n          = fbm(IN.uvWorld * _NoiseScale + float2(t, t * 0.7), 2) - 0.5;
+                float side       = (IN.uv.y * 2.0 - 1.0) - n * _WaveAmplitude * 2.0 * taper;
 
                 // Soft cross-section falloff.
                 float crossSec = pow(saturate(1.0 - abs(side)), _SoftPower);
 
                 // Endpoint taper.
-                float endpointTaper = saturate(sin(tAlong * 3.14159265));
-                endpointTaper = pow(endpointTaper, 0.5);
+                float endpointTaper = pow(saturate(taper), 0.5);
 
-                // Stress: alpha drop, then gap-punching past the break threshold.
-                float stressMask = saturate(1.0 - pairStress * _StressFray);
-                float breakRamp  = smoothstep(_StressBreakStart, 1.0, pairStress);
-                if (breakRamp > 1e-4)
+                // Stress: gentle alpha attenuation, plus optional world-noise
+                // gap-punching past _StressBreakStart. The break depth is
+                // capped by _StressBreakStrength — at strength 0 the ribbon
+                // looks unbroken; at strength 1 you get the dramatic original
+                // fragmenting silhouette.
+                float stressAtten = 1.0 - pairStress * _StressFray;
+                float breakRamp   = smoothstep(_StressBreakStart, 1.0, pairStress);
+                if (breakRamp > 1e-4 && _StressBreakStrength > 1e-4)
                 {
                     float breakNoise = fbm(IN.uvWorld * _NoiseScale * 4.0, 2);
-                    float lo = breakRamp * 0.55;
-                    float hi = max(breakRamp * 0.85, lo + 1e-4);
-                    stressMask *= smoothstep(lo, hi, breakNoise);
+                    float gap        = smoothstep(0.55, 0.85, breakNoise);
+                    float minMult    = 1.0 - _StressBreakStrength * breakRamp;
+                    stressAtten     *= lerp(minMult, 1.0, gap);
                 }
 
                 // Breath modulation.
@@ -164,7 +159,7 @@ Shader "Holobiont/SymbiosisTendrils"
                 float breathMult = lerp(_BreathMin, _BreathMax, breathT);
 
                 float3 col   = lerp(_BaseColor.rgb, _FrayedColor.rgb, pairStress);
-                float  alpha = _CenterAlpha * crossSec * endpointTaper * stressMask * breathMult * _BaseColor.a;
+                float  alpha = _CenterAlpha * crossSec * endpointTaper * stressAtten * breathMult * _BaseColor.a;
                 return half4(col, saturate(alpha));
             }
             ENDHLSL
